@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧠 WIA Neural Code Generator - 실시간 미리보기</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --wia-primary: #667eea;
+            --wia-secondary: #764ba2;
+            --wia-success: #4caf50;
+        }
+
+        * {
+            transition: all 0.3s ease;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .main-container {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            margin: 20px auto;
+            max-width: 1400px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header-section {
+            background: linear-gradient(135deg, var(--wia-primary) 0%, var(--wia-secondary) 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .main-title {
+            font-size: 3rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .content-area {
+            padding: 40px;
+        }
+
+        .form-section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .section-title {
+            color: var(--wia-primary);
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .form-control {
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            border-color: var(--wia-primary);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            outline: none;
+        }
+
+        .preview-panel {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            position: sticky;
+            top: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .preview-canvas-container {
+            position: relative;
+            width: 100%;
+            max-width: 480px;
+            height: 480px;
+            margin: 20px auto;
+            border: 2px dashed #e9ecef;
+            border-radius: 15px;
+            background: white;
+            overflow: hidden;
+        }
+
+        #wiaCanvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        .real-time-badge {
+            display: inline-block;
+            background: var(--wia-success);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            margin-left: 10px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .preview-info {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .info-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .info-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--wia-primary);
+        }
+
+        .info-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+
+        .download-btn {
+            background: linear-gradient(135deg, var(--wia-primary), var(--wia-secondary));
+            border: none;
+            color: white;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.3s;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .type-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .type-btn {
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            background: white;
+            border-radius: 10px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .type-btn:hover {
+            border-color: var(--wia-primary);
+            transform: translateY(-2px);
+        }
+
+        .type-btn.active {
+            border-color: var(--wia-primary);
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+        }
+
+        .type-icon {
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <!-- 헤더 -->
+        <div class="header-section">
+            <h1 class="main-title">🧠 WIA Neural Code Generator</h1>
+            <p class="subtitle">
+                실시간 미리보기 + 실제 데이터 인코딩
+                <span class="real-time-badge">🔴 LIVE</span>
+            </p>
+        </div>
+
+        <div class="content-area">
+            <div class="row">
+                <!-- 왼쪽: 입력 폼 -->
+                <div class="col-lg-7">
+                    <!-- 데이터 타입 선택 -->
+                    <div class="form-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-layer-group"></i>
+                            1. 데이터 타입 선택
+                        </h3>
+
+                        <div class="type-selector" id="typeSelector">
+                            <!-- JavaScript로 생성 -->
+                        </div>
+                    </div>
+
+                    <!-- 데이터 입력 -->
+                    <div class="form-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-keyboard"></i>
+                            2. 데이터 입력 <small style="color: #999;">(실시간 미리보기)</small>
+                        </h3>
+
+                        <!-- 텍스트 -->
+                        <div class="input-form active" id="form-text">
+                            <div class="mb-3">
+                                <label class="form-label">텍스트 내용</label>
+                                <textarea class="form-control" rows="4" id="input-text"
+                                         placeholder="여기에 텍스트를 입력하세요...">Hello WIA Neural Code!</textarea>
+                            </div>
+                        </div>
+
+                        <!-- 링크 -->
+                        <div class="input-form" id="form-link">
+                            <div class="mb-3">
+                                <label class="form-label">웹사이트 URL</label>
+                                <input type="url" class="form-control" id="input-link"
+                                       placeholder="https://example.com">
+                            </div>
+                        </div>
+
+                        <!-- WiFi -->
+                        <div class="input-form" id="form-wifi">
+                            <div class="mb-3">
+                                <label class="form-label">네트워크 이름 (SSID)</label>
+                                <input type="text" class="form-control" id="input-wifi-ssid"
+                                       placeholder="MyWiFi">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">비밀번호</label>
+                                <input type="password" class="form-control" id="input-wifi-password"
+                                       placeholder="password123">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">암호화</label>
+                                <select class="form-control" id="input-wifi-security">
+                                    <option value="WPA">WPA/WPA2</option>
+                                    <option value="WEP">WEP</option>
+                                    <option value="nopass">암호화 없음</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- 이메일 -->
+                        <div class="input-form" id="form-email">
+                            <div class="mb-3">
+                                <label class="form-label">이메일 주소</label>
+                                <input type="email" class="form-control" id="input-email-address"
+                                       placeholder="someone@example.com">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">제목</label>
+                                <input type="text" class="form-control" id="input-email-subject"
+                                       placeholder="이메일 제목">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">내용</label>
+                                <textarea class="form-control" rows="3" id="input-email-body"
+                                         placeholder="이메일 내용..."></textarea>
+                            </div>
+                        </div>
+
+                        <!-- 전화 -->
+                        <div class="input-form" id="form-phone">
+                            <div class="mb-3">
+                                <label class="form-label">전화번호</label>
+                                <input type="tel" class="form-control" id="input-phone"
+                                       placeholder="+82-10-1234-5678">
+                            </div>
+                        </div>
+
+                        <!-- SMS -->
+                        <div class="input-form" id="form-sms">
+                            <div class="mb-3">
+                                <label class="form-label">전화번호</label>
+                                <input type="tel" class="form-control" id="input-sms-phone"
+                                       placeholder="+82-10-1234-5678">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">메시지</label>
+                                <textarea class="form-control" rows="3" id="input-sms-message"
+                                         placeholder="SMS 내용..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 오른쪽: 실시간 미리보기 -->
+                <div class="col-lg-5">
+                    <div class="preview-panel">
+                        <h3 class="section-title">
+                            <i class="fas fa-eye"></i>
+                            실시간 미리보기
+                            <span class="real-time-badge">🔴 LIVE</span>
+                        </h3>
+
+                        <div class="preview-canvas-container">
+                            <canvas id="wiaCanvas" width="480" height="480"></canvas>
+                        </div>
+
+                        <!-- 정보 표시 -->
+                        <div class="preview-info">
+                            <div class="info-card">
+                                <div class="info-value" id="dataSize">0</div>
+                                <div class="info-label">바이트</div>
+                            </div>
+                            <div class="info-card">
+                                <div class="info-value" id="neuronCount">0</div>
+                                <div class="info-label">뉴런</div>
+                            </div>
+                            <div class="info-card">
+                                <div class="info-value" id="connectionCount">0</div>
+                                <div class="info-label">연결선</div>
+                            </div>
+                        </div>
+
+                        <!-- 다운로드 버튼 -->
+                        <button class="download-btn" id="downloadBtn">
+                            <i class="fas fa-download"></i>
+                            PNG 다운로드
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="./assets/js/wia-neural-encoder.js"></script>
+    <script src="./assets/js/wia-neural-decoder.js"></script>
+    <script src="./assets/js/wia-engine.js"></script>
+
+    <script>
+        // 데이터 타입 정의
+        const dataTypes = {
+            'text': { icon: '📝', name: '텍스트' },
+            'link': { icon: '🔗', name: '링크' },
+            'wifi': { icon: '📶', name: 'WiFi' },
+            'email': { icon: '📧', name: '이메일' },
+            'phone': { icon: '📞', name: '전화' },
+            'sms': { icon: '💬', name: 'SMS' }
+        };
+
+        let currentType = 'text';
+        let encoder = null;
+        let engine = null;
+        let updateTimeout = null;
+
+        // 초기화
+        window.addEventListener('DOMContentLoaded', () => {
+            console.log('🧠 WIA Neural Code Generator 초기화...');
+
+            encoder = new WIANeuralEncoder();
+            const canvas = document.getElementById('wiaCanvas');
+            engine = new WIANeuralEngine(canvas);
+
+            // 타입 선택기 렌더링
+            renderTypeSelector();
+
+            // 이벤트 리스너
+            setupEventListeners();
+
+            // 초기 미리보기
+            updatePreview();
+
+            console.log('✅ 초기화 완료!');
+        });
+
+        // 타입 선택기 렌더링
+        function renderTypeSelector() {
+            const selector = document.getElementById('typeSelector');
+
+            Object.entries(dataTypes).forEach(([id, type]) => {
+                const btn = document.createElement('div');
+                btn.className = 'type-btn' + (id === currentType ? ' active' : '');
+                btn.innerHTML = `
+                    <div class="type-icon">${type.icon}</div>
+                    <div>${type.name}</div>
+                `;
+                btn.onclick = () => selectType(id);
+                selector.appendChild(btn);
+            });
+        }
+
+        // 타입 선택
+        function selectType(type) {
+            currentType = type;
+
+            // 버튼 스타일 업데이트
+            document.querySelectorAll('.type-btn').forEach((btn, idx) => {
+                btn.classList.toggle('active', Object.keys(dataTypes)[idx] === type);
+            });
+
+            // 입력 폼 표시
+            document.querySelectorAll('.input-form').forEach(form => {
+                form.style.display = 'none';
+            });
+            document.getElementById(`form-${type}`).style.display = 'block';
+
+            // 미리보기 업데이트
+            scheduleUpdate();
+        }
+
+        // 이벤트 리스너 설정
+        function setupEventListeners() {
+            // 모든 입력 필드에 실시간 업데이트
+            document.querySelectorAll('input, textarea, select').forEach(input => {
+                input.addEventListener('input', scheduleUpdate);
+                input.addEventListener('change', scheduleUpdate);
+            });
+
+            // 다운로드 버튼
+            document.getElementById('downloadBtn').addEventListener('click', downloadCode);
+        }
+
+        // 업데이트 스케줄링 (디바운싱)
+        function scheduleUpdate() {
+            clearTimeout(updateTimeout);
+            updateTimeout = setTimeout(updatePreview, 300);
+        }
+
+        // 실시간 미리보기 업데이트
+        function updatePreview() {
+            try {
+                // 현재 입력 데이터 수집
+                const data = collectCurrentData();
+
+                // 인코딩
+                const pattern = encoder.encode(currentType, data);
+
+                // 렌더링
+                const dataStr = typeof data === 'object' ? JSON.stringify(data) : String(data);
+                engine.generate(dataStr, 'triangle', 'high');
+
+                // 정보 업데이트
+                document.getElementById('dataSize').textContent = pattern.metadata.dataSize;
+                document.getElementById('neuronCount').textContent = pattern.neurons.length;
+                document.getElementById('connectionCount').textContent = pattern.connections.length;
+
+                console.log('✅ 미리보기 업데이트:', currentType, pattern.metadata.dataSize + ' bytes');
+
+            } catch (error) {
+                console.error('❌ 미리보기 오류:', error);
+            }
+        }
+
+        // 현재 데이터 수집
+        function collectCurrentData() {
+            switch (currentType) {
+                case 'text':
+                    return {
+                        content: document.getElementById('input-text').value
+                    };
+
+                case 'link':
+                    return {
+                        content: document.getElementById('input-link').value || 'https://wiacode.com'
+                    };
+
+                case 'wifi':
+                    return {
+                        ssid: document.getElementById('input-wifi-ssid').value,
+                        password: document.getElementById('input-wifi-password').value,
+                        security: document.getElementById('input-wifi-security').value
+                    };
+
+                case 'email':
+                    return {
+                        email: document.getElementById('input-email-address').value,
+                        subject: document.getElementById('input-email-subject').value,
+                        body: document.getElementById('input-email-body').value
+                    };
+
+                case 'phone':
+                    return {
+                        content: 'tel:' + document.getElementById('input-phone').value
+                    };
+
+                case 'sms':
+                    return {
+                        phone: document.getElementById('input-sms-phone').value,
+                        message: document.getElementById('input-sms-message').value
+                    };
+
+                default:
+                    return { content: '' };
+            }
+        }
+
+        // PNG 다운로드
+        function downloadCode() {
+            try {
+                const canvas = document.getElementById('wiaCanvas');
+                const dataUrl = canvas.toDataURL('image/png');
+
+                const link = document.createElement('a');
+                link.download = `WIA_${currentType}_${Date.now()}.png`;
+                link.href = dataUrl;
+                link.click();
+
+                console.log('✅ 다운로드 완료');
+
+            } catch (error) {
+                console.error('❌ 다운로드 오류:', error);
+                alert('다운로드 중 오류가 발생했습니다.');
+            }
+        }
+    </script>
+
+    <style>
+        .input-form {
+            display: none;
+        }
+        .input-form.active {
+            display: block;
+        }
+    </style>
+</body>
+</html>
