@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🌍 WIA Stealth Navigator - Ultimate Edition</title>
+
+    <!-- 모든 필요한 라이브러리 -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #000;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* 스텔스 헤더 */
+        .stealth-header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(20px);
+            padding: 10px 20px;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(102, 126, 234, 0.3);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 20px;
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.5);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(102, 126, 234, 0.5); }
+            50% { box-shadow: 0 0 30px rgba(102, 126, 234, 0.8); }
+        }
+
+        .logo-text {
+            font-size: 18px;
+            font-weight: 600;
+            color: #fff;
+            text-shadow: 0 0 10px rgba(102, 126, 234, 0.5);
+        }
+
+        /* 검색바 */
+        .search-container {
+            position: absolute;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            width: 90%;
+            max-width: 600px;
+        }
+
+        .search-box {
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            border-radius: 30px;
+            padding: 15px 20px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .search-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            font-size: 16px;
+            color: #fff;
+        }
+
+        .search-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .search-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .search-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.5);
+        }
+
+        /* 지도 컨테이너 */
+        #map {
+            position: absolute;
+            top: 60px;
+            left: 0;
+            right: 0;
+            bottom: 80px;
+            z-index: 1;
+            background: #1a1a1a;
+        }
+
+        /* 좌측 정보 패널 */
+        .info-panel {
+            position: absolute;
+            bottom: 100px;
+            left: 20px;
+            width: 420px;
+            max-width: 90%;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            transition: transform 0.3s ease;
+        }
+
+        .info-panel.minimized {
+            transform: translateX(-450px);
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .panel-title {
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .minimize-btn {
+            background: none;
+            border: none;
+            color: #667eea;
+            cursor: pointer;
+            font-size: 20px;
+            transition: transform 0.3s;
+        }
+
+        .minimize-btn:hover {
+            transform: rotate(-90deg);
+        }
+
+        .wia-code-display {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 15px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .wia-code-display::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+            animation: shine 3s infinite;
+        }
+
+        @keyframes shine {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .wia-code {
+            font-size: 20px;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+            position: relative;
+        }
+
+        /* WIA Neural Code 미리보기 - 신규! */
+        .neural-preview {
+            background: white;
+            border-radius: 10px;
+            padding: 10px;
+            margin: 10px 0;
+            text-align: center;
+        }
+
+        .neural-preview canvas {
+            width: 100%;
+            max-width: 200px;
+            height: auto;
+            border-radius: 8px;
+        }
+
+        .neural-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #4caf50, #45a049);
+            color: white;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            margin-top: 5px;
+        }
+
+        .address-info {
+            padding: 15px;
+            background: rgba(102, 126, 234, 0.1);
+            border-left: 3px solid #667eea;
+            margin: 10px 0;
+            border-radius: 10px;
+        }
+
+        .address-label {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 5px;
+        }
+
+        .address-text {
+            color: #fff;
+            line-height: 1.5;
+        }
+
+        /* 플로팅 토글 버튼 */
+        .toggle-panel-btn {
+            position: absolute;
+            bottom: 100px;
+            left: 20px;
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.5);
+            z-index: 999;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .toggle-panel-btn.show {
+            opacity: 1;
+        }
+
+        /* 하단 네비게이션 */
+        .bottom-nav {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(102, 126, 234, 0.3);
+            z-index: 1000;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+        }
+
+        .nav-item {
+            flex: 1;
+            text-align: center;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: rgba(255, 255, 255, 0.6);
+            position: relative;
+        }
+
+        .nav-item:hover {
+            color: #fff;
+        }
+
+        .nav-item.active {
+            color: #667eea;
+        }
+
+        .nav-item.active::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30px;
+            height: 3px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        /* Leaflet 커스텀 */
+        .leaflet-container {
+            background: #1a1a1a !important;
+        }
+
+        .leaflet-control-zoom {
+            border: 1px solid rgba(102, 126, 234, 0.3) !important;
+            background: rgba(0, 0, 0, 0.8) !important;
+        }
+
+        .leaflet-control-zoom a {
+            background: rgba(0, 0, 0, 0.8) !important;
+            color: #667eea !important;
+        }
+
+        .leaflet-control-zoom a:hover {
+            background: rgba(102, 126, 234, 0.2) !important;
+        }
+
+        /* 로딩 */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            display: none;
+        }
+
+        .loading-overlay.show {
+            display: flex;
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 3px solid transparent;
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: #667eea;
+            margin-top: 20px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 스텔스 헤더 -->
+    <div class="stealth-header">
+        <div class="logo">
+            <div class="logo-icon">W</div>
+            <div class="logo-text">WIA Stealth Navigator</div>
+        </div>
+        <div style="display: flex; gap: 15px;">
+            <button onclick="toggleFullscreen()" style="background: none; border: none; cursor: pointer;">
+                <i class="fas fa-expand" style="font-size: 20px; color: #667eea;"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- 검색바 -->
+    <div class="search-container">
+        <div class="search-box">
+            <i class="fas fa-search" style="color: rgba(255,255,255,0.5);"></i>
+            <input type="text" class="search-input" id="searchInput"
+                   placeholder="주소 또는 WIA Pin Code (예: 82-708-698-852)">
+            <button class="search-btn" onclick="search()">
+                <i class="fas fa-search"></i> 검색
+            </button>
+        </div>
+    </div>
+
+    <!-- 지도 -->
+    <div id="map"></div>
+
+    <!-- 좌측 정보 패널 -->
+    <div class="info-panel" id="infoPanel">
+        <div class="panel-header">
+            <span class="panel-title">📍 위치 정보</span>
+            <button class="minimize-btn" onclick="togglePanel()">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+        </div>
+
+        <div class="wia-code-display">
+            <div style="font-size: 12px; opacity: 0.9; margin-bottom: 5px;">WIA PIN CODE</div>
+            <div class="wia-code" id="wiaCode">🌍 지도를 클릭하세요</div>
+        </div>
+
+        <!-- WIA Neural Code 미리보기 - 신규! -->
+        <div class="neural-preview" id="neuralPreview" style="display:none;">
+            <div style="font-size: 12px; color: #667eea; margin-bottom: 5px;">🧠 WIA Neural Code</div>
+            <canvas id="neuralCanvas" width="200" height="200"></canvas>
+            <div class="neural-badge">✅ 리더기로 스캔 가능</div>
+            <button onclick="downloadNeuralCode()" style="margin-top: 10px; padding: 8px 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 20px; cursor: pointer; width: 100%;">
+                <i class="fas fa-download"></i> Neural Code 다운로드
+            </button>
+        </div>
+
+        <div class="address-info">
+            <div class="address-label">📍 주소</div>
+            <div class="address-text" id="roadAddress">위치를 선택하세요</div>
+        </div>
+
+        <div class="address-info">
+            <div class="address-label">🌐 좌표</div>
+            <div class="address-text" id="coordinates">-</div>
+        </div>
+
+        <div class="address-info">
+            <div class="address-label">🌍 국가</div>
+            <div class="address-text" id="countryInfo">-</div>
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-top: 15px;">
+            <button onclick="copyWiaCode()" style="flex: 1; padding: 10px; background: rgba(102, 126, 234, 0.2); color: #667eea; border: 1px solid #667eea; border-radius: 10px; cursor: pointer;">
+                <i class="fas fa-copy"></i> 복사
+            </button>
+            <button onclick="shareLocation()" style="flex: 1; padding: 10px; background: rgba(102, 126, 234, 0.2); color: #667eea; border: 1px solid #667eea; border-radius: 10px; cursor: pointer;">
+                <i class="fas fa-share"></i> 공유
+            </button>
+            <button onclick="navigate()" style="flex: 1; padding: 10px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 10px; cursor: pointer;">
+                <i class="fas fa-directions"></i> 길찾기
+            </button>
+        </div>
+    </div>
+
+    <!-- 플로팅 토글 버튼 -->
+    <div class="toggle-panel-btn" id="togglePanelBtn" onclick="togglePanel()">
+        <i class="fas fa-info"></i>
+    </div>
+
+    <!-- 하단 네비게이션 -->
+    <div class="bottom-nav">
+        <div class="nav-item active" onclick="switchView('map', this)">
+            <div class="nav-icon"><i class="fas fa-map"></i></div>
+            <div class="nav-label">지도</div>
+        </div>
+        <div class="nav-item" onclick="switchView('satellite', this)">
+            <div class="nav-icon"><i class="fas fa-satellite"></i></div>
+            <div class="nav-label">위성</div>
+        </div>
+        <div class="nav-item" onclick="window.location.href='./wia-neural-reader.html'">
+            <div class="nav-icon"><i class="fas fa-qrcode"></i></div>
+            <div class="nav-label">스캔</div>
+        </div>
+        <div class="nav-item" onclick="window.location.href='./wiapincode-index-with-neural.html'">
+            <div class="nav-icon"><i class="fas fa-home"></i></div>
+            <div class="nav-label">홈</div>
+        </div>
+    </div>
+
+    <!-- 로딩 오버레이 -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">위치 정보 조회 중...</div>
+    </div>
+
+    <!-- JavaScript 라이브러리 -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="./assets/js/wia-neural-encoder.js"></script>
+    <script src="./assets/js/wia-engine.js"></script>
+    <script src="./wia-country-code-api.js"></script>
+
+    <script>
+        // 전역 변수
+        let map = null;
+        let currentMarker = null;
+        let currentPosition = { lat: 37.5665, lng: 126.9780 };
+        let isPanelMinimized = false;
+        let currentWIACode = '';
+        let encoder = null;
+        let engine = null;
+        let countryCodeResolver = null;
+
+        // 초기화
+        window.onload = function() {
+            console.log('🌍 WIA Stealth Navigator 초기화...');
+
+            try {
+                // WIA 엔진 초기화
+                encoder = new WIANeuralEncoder();
+                const canvas = document.getElementById('neuralCanvas');
+                engine = new WIANeuralEngine(canvas);
+                countryCodeResolver = new WIACountryCodeResolver();
+
+                console.log('✅ WIA 엔진 초기화 완료 (206개 국가 지원)');
+            } catch (error) {
+                console.warn('⚠️ WIA 엔진 초기화 실패 (기본 기능만 사용):', error);
+            }
+
+            initMap();
+            initGeolocation();
+            initEventListeners();
+        };
+
+        // 지도 초기화
+        function initMap() {
+            map = L.map('map', {
+                center: [currentPosition.lat, currentPosition.lng],
+                zoom: 13,
+                zoomControl: true,
+                attributionControl: false
+            });
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '© OpenStreetMap'
+            }).addTo(map);
+
+            map.on('click', function(e) {
+                addMarkerAtLocation(e.latlng.lat, e.latlng.lng);
+            });
+        }
+
+        // 현재 위치
+        function initGeolocation() {
+            if (navigator.geolocation) {
+                showLoading();
+                navigator.geolocation.getCurrentPosition(
+                    position => {
+                        currentPosition = {
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude
+                        };
+                        map.setView([currentPosition.lat, currentPosition.lng], 15);
+                        addMarkerAtLocation(currentPosition.lat, currentPosition.lng);
+                        hideLoading();
+                    },
+                    error => {
+                        console.log('위치 정보 오류:', error);
+                        addMarkerAtLocation(currentPosition.lat, currentPosition.lng);
+                        hideLoading();
+                    }
+                );
+            }
+        }
+
+        // 마커 추가 (실제 YUJIN Transform 사용!)
+        async function addMarkerAtLocation(lat, lng) {
+            showLoading();
+
+            if (currentMarker) {
+                map.removeLayer(currentMarker);
+            }
+
+            const wiaIcon = L.divIcon({
+                html: `<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                       width: 40px; height: 40px; border-radius: 50%;
+                       display: flex; align-items: center; justify-content: center;
+                       color: white; font-weight: bold; box-shadow: 0 0 20px rgba(102, 126, 234, 0.8);">W</div>`,
+                className: 'custom-marker',
+                iconSize: [40, 40],
+                iconAnchor: [20, 40]
+            });
+
+            currentMarker = L.marker([lat, lng], { icon: wiaIcon }).addTo(map);
+
+            // 실제 WIA Pin Code 생성 (YUJIN Transform + 실제 국가 코드!)
+            await generateRealWIACode(lat, lng);
+
+            // 주소 조회
+            await getAddressFromCoords(lat, lng);
+
+            hideLoading();
+        }
+
+        // 실제 WIA Pin Code 생성 (YUJIN Transform)
+        async function generateRealWIACode(lat, lng) {
+            try {
+                // 1. 실제 국가 코드 조회
+                let countryCode = '82'; // 기본값
+                if (countryCodeResolver) {
+                    countryCode = await countryCodeResolver.getCountryCode(lat, lng);
+                }
+
+                // 2. YUJIN Transform 적용
+                const normalizedLat = Math.floor(((lat + 90) / 180) * 999999);
+                const normalizedLng = Math.floor(((lng + 180) / 360) * 999);
+
+                const latPart = normalizedLat.toString().padStart(6, '0');
+                const lngPart = normalizedLng.toString().padStart(3, '0');
+
+                // 3. WIA PIN CODE 생성 (Country-3-3-3 형식)
+                currentWIACode = `${countryCode}-${latPart.substring(0,3)}-${latPart.substring(3,6)}-${lngPart}`;
+
+                // 4. 정보 패널 업데이트
+                document.getElementById('wiaCode').textContent = currentWIACode;
+                document.getElementById('coordinates').textContent =
+                    `위도: ${lat.toFixed(6)}, 경도: ${lng.toFixed(6)}`;
+
+                // 5. WIA Neural Code 생성!
+                if (encoder && engine) {
+                    generateNeuralCode(currentWIACode);
+                }
+
+                console.log(`✅ WIA PIN CODE 생성: ${currentWIACode} (국가: ${countryCode})`);
+
+            } catch (error) {
+                console.error('❌ WIA PIN CODE 생성 오류:', error);
+                // Fallback
+                const simpleCode = `82-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`;
+                document.getElementById('wiaCode').textContent = simpleCode;
+            }
+        }
+
+        // WIA Neural Code 생성
+        function generateNeuralCode(wiaCode) {
+            try {
+                console.log('🧠 WIA Neural Code 생성:', wiaCode);
+
+                // 인코딩
+                const pattern = encoder.encode('text', { content: wiaCode });
+
+                // Canvas에 렌더링
+                engine.generate(wiaCode, 'triangle', 'high');
+
+                // 미리보기 표시
+                document.getElementById('neuralPreview').style.display = 'block';
+
+                console.log('✅ Neural Code 생성 완료');
+
+            } catch (error) {
+                console.error('❌ Neural Code 생성 오류:', error);
+                document.getElementById('neuralPreview').style.display = 'none';
+            }
+        }
+
+        // Neural Code 다운로드
+        function downloadNeuralCode() {
+            const canvas = document.getElementById('neuralCanvas');
+            if (canvas) {
+                const link = document.createElement('a');
+                link.download = `WIA-Neural-Code-${currentWIACode}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                showToast('✅ WIA Neural Code가 다운로드되었습니다!');
+            }
+        }
+
+        // 주소 조회
+        async function getAddressFromCoords(lat, lng) {
+            try {
+                const nominatimUrl = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=ko`;
+                const response = await fetch(nominatimUrl);
+                const data = await response.json();
+
+                if (data && data.display_name) {
+                    document.getElementById('roadAddress').textContent = data.display_name;
+
+                    // 국가 정보 표시
+                    if (data.address && data.address.country) {
+                        const countryCode = data.address.country_code ? data.address.country_code.toUpperCase() : '';
+                        document.getElementById('countryInfo').textContent =
+                            `${data.address.country} (${countryCode})`;
+                    }
+                }
+            } catch (error) {
+                console.error('주소 조회 오류:', error);
+                document.getElementById('roadAddress').textContent =
+                    `위도 ${lat.toFixed(6)}, 경도 ${lng.toFixed(6)}`;
+            }
+        }
+
+        // 검색 (WIA PIN Code 검색 지원!)
+        async function search() {
+            const query = document.getElementById('searchInput').value.trim();
+            if (!query) return;
+
+            showLoading();
+
+            try {
+                // WIA PIN Code 형식 감지 (예: 82-708-698-852)
+                if (/^\d{1,3}-\d{3}-\d{3}-\d{3}$/.test(query)) {
+                    // WIA PIN Code를 GPS로 역변환
+                    const parts = query.split('-');
+                    const countryCode = parts[0];
+                    const latPart = parts[1] + parts[2]; // 6자리
+                    const lngPart = parts[3]; // 3자리
+
+                    // YUJIN Transform 역변환
+                    const normalizedLat = parseInt(latPart);
+                    const normalizedLng = parseInt(lngPart);
+
+                    const lat = (normalizedLat / 999999) * 180 - 90;
+                    const lng = (normalizedLng / 999) * 360 - 180;
+
+                    map.setView([lat, lng], 17);
+                    addMarkerAtLocation(lat, lng);
+                    showToast(`✅ WIA PIN Code 위치로 이동: ${query}`);
+
+                } else {
+                    // 일반 주소 검색
+                    const searchUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1&accept-language=ko`;
+                    const response = await fetch(searchUrl);
+                    const data = await response.json();
+
+                    if (data.length > 0) {
+                        const lat = parseFloat(data[0].lat);
+                        const lng = parseFloat(data[0].lon);
+                        map.setView([lat, lng], 17);
+                        addMarkerAtLocation(lat, lng);
+                        showToast('✅ 위치를 찾았습니다!');
+                    } else {
+                        showToast('❌ 검색 결과가 없습니다.');
+                    }
+                }
+            } catch (error) {
+                console.error('검색 오류:', error);
+                showToast('❌ 검색 중 오류가 발생했습니다.');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // 뷰 전환
+        function switchView(view, element) {
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            element.classList.add('active');
+
+            if (view === 'satellite') {
+                map.eachLayer(layer => {
+                    if (layer instanceof L.TileLayer) {
+                        map.removeLayer(layer);
+                    }
+                });
+                L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                    maxZoom: 19
+                }).addTo(map);
+
+                setTimeout(() => map.invalidateSize(), 100);
+            } else if (view === 'map') {
+                map.eachLayer(layer => {
+                    if (layer instanceof L.TileLayer) {
+                        map.removeLayer(layer);
+                    }
+                });
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19
+                }).addTo(map);
+
+                setTimeout(() => map.invalidateSize(), 100);
+            }
+        }
+
+        // 패널 토글
+        function togglePanel() {
+            const panel = document.getElementById('infoPanel');
+            const toggleBtn = document.getElementById('togglePanelBtn');
+
+            isPanelMinimized = !isPanelMinimized;
+
+            if (isPanelMinimized) {
+                panel.classList.add('minimized');
+                toggleBtn.classList.add('show');
+            } else {
+                panel.classList.remove('minimized');
+                toggleBtn.classList.remove('show');
+            }
+        }
+
+        // 복사
+        function copyWiaCode() {
+            if (currentWIACode) {
+                navigator.clipboard.writeText(currentWIACode).then(() => {
+                    showToast('✅ WIA Pin Code가 복사되었습니다!');
+                });
+            }
+        }
+
+        // 공유
+        function shareLocation() {
+            const url = `https://wiapincode.com/share?code=${currentWIACode}`;
+
+            if (navigator.share) {
+                navigator.share({
+                    title: 'WIA 위치 공유',
+                    text: `WIA PIN CODE: ${currentWIACode}`,
+                    url: url
+                });
+            } else {
+                navigator.clipboard.writeText(url).then(() => {
+                    showToast('✅ 공유 링크가 복사되었습니다!');
+                });
+            }
+        }
+
+        // 길찾기
+        function navigate() {
+            if (currentPosition.lat && currentPosition.lng) {
+                const url = `https://www.google.com/maps/dir/?api=1&destination=${currentPosition.lat},${currentPosition.lng}`;
+                window.open(url, '_blank');
+            }
+        }
+
+        // 전체화면
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        // 로딩 표시
+        function showLoading() {
+            document.getElementById('loadingOverlay').classList.add('show');
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').classList.remove('show');
+        }
+
+        // 토스트 메시지
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                bottom: 100px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 15px 30px;
+                border-radius: 30px;
+                box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+                z-index: 10000;
+                animation: slideUp 0.3s ease;
+            `;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.animation = 'slideDown 0.3s ease';
+                setTimeout(() => document.body.removeChild(toast), 300);
+            }, 2000);
+        }
+
+        // 이벤트 리스너
+        function initEventListeners() {
+            document.getElementById('searchInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    search();
+                }
+            });
+
+            window.addEventListener('resize', () => {
+                if (map) {
+                    map.invalidateSize();
+                }
+            });
+        }
+
+        // CSS 애니메이션
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideUp {
+                from { transform: translate(-50%, 100px); opacity: 0; }
+                to { transform: translate(-50%, 0); opacity: 1; }
+            }
+            @keyframes slideDown {
+                from { transform: translate(-50%, 0); opacity: 1; }
+                to { transform: translate(-50%, 100px); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>
