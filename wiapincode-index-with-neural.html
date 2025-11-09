@@ -535,12 +535,14 @@
     <script src="./assets/js/wia-neural-encoder.js"></script>
     <script src="./assets/js/wia-neural-decoder.js"></script>
     <script src="./assets/js/wia-engine.js"></script>
+    <script src="./wia-country-code-api.js"></script>
 
     <script>
         // WIA Pin Code Generation Logic
         let currentWIACode = '';
         let encoder = null;
         let engine = null;
+        let countryCodeResolver = null;
 
         // 초기화
         document.addEventListener('DOMContentLoaded', function() {
@@ -550,11 +552,12 @@
                 encoder = new WIANeuralEncoder();
                 const canvas = document.getElementById('neuralCanvas');
                 engine = new WIANeuralEngine(canvas);
+                countryCodeResolver = new WIACountryCodeResolver();
 
                 // 초기 기본 패턴 표시
                 engine.generate('WIA Pin Code', 'triangle', 'high');
 
-                console.log('✅ 초기화 완료!');
+                console.log('✅ 초기화 완료 (206개 국가 지원)!');
             } catch (error) {
                 console.error('❌ 초기화 오류:', error);
             }
@@ -571,7 +574,7 @@
             }
         });
 
-        function generateWIACode() {
+        async function generateWIACode() {
             const lat = parseFloat(document.getElementById('latitude').value);
             const lng = parseFloat(document.getElementById('longitude').value);
             const floor = document.getElementById('floor').value;
@@ -582,8 +585,13 @@
                 return;
             }
 
-            // Get country code
-            const countryCode = getCountryCode(lat, lng);
+            // 로딩 표시
+            document.getElementById('result').innerHTML = '<p style="color: #666;">🌍 국가 코드 조회 중...</p>';
+            document.getElementById('result').classList.add('show');
+
+            // Get country code (실제 GPS 기반!)
+            const countryCode = await countryCodeResolver.getCountryCode(lat, lng);
+            console.log(`✅ 국가 코드: ${countryCode}`);
 
             // Convert coordinates to WIA format (YUJIN Transform)
             const normalizedLat = Math.floor(((lat + 90) / 180) * 999999);
@@ -662,18 +670,8 @@
             }
         }
 
-        function getCountryCode(lat, lng) {
-            // South Korea
-            if (lat >= 33 && lat <= 43 && lng >= 124 && lng <= 132) return '82';
-            // Japan
-            if (lat >= 24 && lat <= 46 && lng >= 123 && lng <= 146) return '81';
-            // China
-            if (lat >= 18 && lat <= 54 && lng >= 73 && lng <= 135) return '86';
-            // USA
-            if (lat >= 25 && lat <= 49 && lng >= -125 && lng <= -66) return '1';
-            // Default to South Korea
-            return '82';
-        }
+        // 기존 단순 함수는 더 이상 사용 안 함 (WIACountryCodeResolver 사용)
+        // 실제 GPS 기반 206개 국가 정확한 코드 조회!
 
         function getCurrentLocation() {
             if (navigator.geolocation) {
