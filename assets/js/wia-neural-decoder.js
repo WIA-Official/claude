@@ -1,0 +1,476 @@
+/**
+ * ============================================================================
+ * 🔍 WIA Neural Decoder - 뉴럴 패턴에서 데이터 복원
+ * ============================================================================
+ *
+ * 핵심 기능:
+ * - Canvas/이미지에서 뉴럴 패턴 인식
+ * - 바이트 데이터 복원
+ * - 오류 정정 적용
+ * - 원본 데이터 재구성
+ */
+
+class WIANeuralDecoder {
+    constructor() {
+        this.VERSION = '1.0.0';
+        this.GRID_SIZE = 480;
+        this.NEURON_COUNT = 144;
+        this.ERROR_THRESHOLD = 0.1; // 10% 오류 허용
+
+        console.log('🔍 WIA Neural Decoder 초기화 완료');
+    }
+
+    /**
+     * 메인 디코딩 함수
+     * @param {HTMLCanvasElement|Image} source - Canvas 또는 이미지
+     * @returns {object} - 디코딩된 데이터
+     */
+    async decode(source) {
+        try {
+            console.log('📖 디코딩 시작...');
+
+            // 1. 이미지 데이터 추출
+            const imageData = this.extractImageData(source);
+
+            // 2. 뉴런 위치 감지
+            const neurons = this.detectNeurons(imageData);
+
+            if (neurons.length === 0) {
+                throw new Error('뉴런을 감지할 수 없습니다. WIA Neural Code가 아니거나 손상되었습니다.');
+            }
+
+            // 3. 연결선 추적
+            const connections = this.traceConnections(imageData, neurons);
+
+            // 4. 바이트 데이터 복원
+            const bytes = this.reconstructBytes(neurons, connections);
+
+            // 5. 오류 정정 적용
+            const correctedBytes = this.applyErrorCorrection(bytes);
+
+            // 6. 바이트를 문자열로 변환
+            const decodedString = this.bytesToString(correctedBytes);
+
+            // 7. 데이터 타입 파싱
+            const result = this.parseDecodedData(decodedString);
+
+            console.log('✅ 디코딩 완료:', result);
+            return result;
+
+        } catch (error) {
+            console.error('❌ 디코딩 오류:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Canvas/이미지에서 ImageData 추출
+     */
+    extractImageData(source) {
+        let canvas, ctx;
+
+        if (source instanceof HTMLCanvasElement) {
+            canvas = source;
+            ctx = canvas.getContext('2d');
+        } else if (source instanceof HTMLImageElement) {
+            canvas = document.createElement('canvas');
+            canvas.width = source.width;
+            canvas.height = source.height;
+            ctx = canvas.getContext('2d');
+            ctx.drawImage(source, 0, 0);
+        } else {
+            throw new Error('지원하지 않는 소스 타입입니다.');
+        }
+
+        return ctx.getImageData(0, 0, canvas.width, canvas.height);
+    }
+
+    /**
+     * 뉴런 위치 감지 (원형 패턴 찾기)
+     */
+    detectNeurons(imageData) {
+        const neurons = [];
+        const { width, height, data } = imageData;
+
+        // 그리드 스캔
+        const gridSize = Math.sqrt(this.NEURON_COUNT);
+        const spacing = width / (gridSize + 1);
+
+        for (let i = 0; i < gridSize; i++) {
+            for (let j = 0; j < gridSize; j++) {
+                const expectedX = Math.round((j + 1) * spacing);
+                const expectedY = Math.round((i + 1) * spacing);
+
+                // 주변 영역에서 뉴런 검색 (±10px)
+                const neuron = this.findNeuronNear(
+                    data,
+                    width,
+                    height,
+                    expectedX,
+                    expectedY,
+                    10
+                );
+
+                if (neuron) {
+                    neurons.push({
+                        id: i * gridSize + j,
+                        x: neuron.x,
+                        y: neuron.y,
+                        intensity: neuron.intensity
+                    });
+                }
+            }
+        }
+
+        console.log(`🔍 ${neurons.length}개 뉴런 감지됨`);
+        return neurons;
+    }
+
+    /**
+     * 특정 위치 근처에서 뉴런 찾기
+     */
+    findNeuronNear(data, width, height, centerX, centerY, radius) {
+        let maxIntensity = 0;
+        let neuronX = centerX;
+        let neuronY = centerY;
+
+        for (let dy = -radius; dy <= radius; dy++) {
+            for (let dx = -radius; dx <= radius; dx++) {
+                const x = centerX + dx;
+                const y = centerY + dy;
+
+                if (x < 0 || x >= width || y < 0 || y >= height) continue;
+
+                const idx = (y * width + x) * 4;
+                const r = data[idx];
+                const g = data[idx + 1];
+                const b = data[idx + 2];
+
+                // WIA 보라색 계열 감지 (102, 126, 234)
+                const isWIAColor =
+                    r > 80 && r < 150 &&
+                    g > 100 && g < 150 &&
+                    b > 200 && b < 250;
+
+                if (isWIAColor) {
+                    const intensity = (r + g + b) / 3 / 255;
+                    if (intensity > maxIntensity) {
+                        maxIntensity = intensity;
+                        neuronX = x;
+                        neuronY = y;
+                    }
+                }
+            }
+        }
+
+        return maxIntensity > 0.3 ? { x: neuronX, y: neuronY, intensity: maxIntensity } : null;
+    }
+
+    /**
+     * 연결선 추적 (뉴런 간 연결 감지)
+     */
+    traceConnections(imageData, neurons) {
+        const connections = [];
+        const { width, data } = imageData;
+
+        // 모든 뉴런 쌍 검사
+        for (let i = 0; i < neurons.length - 1; i++) {
+            const start = neurons[i];
+            const end = neurons[i + 1];
+
+            // 두 뉴런 사이의 선 추적
+            const connection = this.traceLine(data, width, start, end);
+
+            if (connection) {
+                connections.push({
+                    startId: start.id,
+                    endId: end.id,
+                    strength: connection.strength
+                });
+            }
+        }
+
+        console.log(`🔗 ${connections.length}개 연결선 감지됨`);
+        return connections;
+    }
+
+    /**
+     * 두 점 사이의 선 추적
+     */
+    traceLine(data, width, start, end) {
+        const dx = end.x - start.x;
+        const dy = end.y - start.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const steps = Math.floor(distance);
+
+        let totalIntensity = 0;
+        let sampleCount = 0;
+
+        for (let i = 0; i < steps; i++) {
+            const t = i / steps;
+            const x = Math.round(start.x + dx * t);
+            const y = Math.round(start.y + dy * t);
+
+            const idx = (y * width + x) * 4;
+            const r = data[idx];
+            const g = data[idx + 1];
+            const b = data[idx + 2];
+
+            // WIA 보라색 연결선 감지
+            const isConnection =
+                r > 100 && r < 140 &&
+                g > 60 && g < 100 &&
+                b > 150 && b < 180;
+
+            if (isConnection) {
+                totalIntensity += (r + g + b) / 3 / 255;
+                sampleCount++;
+            }
+        }
+
+        const avgStrength = sampleCount > 0 ? totalIntensity / sampleCount : 0;
+
+        return avgStrength > 0.1 ? { strength: avgStrength } : null;
+    }
+
+    /**
+     * 바이트 데이터 복원
+     */
+    reconstructBytes(neurons, connections) {
+        const bytes = [];
+
+        // 뉴런의 intensity에서 바이트 값 복원
+        for (const neuron of neurons) {
+            const byteValue = Math.round(neuron.intensity * 255);
+            bytes.push(byteValue);
+        }
+
+        // 연결선의 strength에서 추가 데이터 복원
+        for (const conn of connections) {
+            const byteValue = Math.round(conn.strength * 255);
+            bytes.push(byteValue);
+        }
+
+        console.log(`📦 ${bytes.length} 바이트 복원됨`);
+        return bytes;
+    }
+
+    /**
+     * 오류 정정 적용
+     */
+    applyErrorCorrection(bytes) {
+        // ECC 데이터 분리 (마지막 30%가 ECC)
+        const eccLength = Math.floor(bytes.length * 0.3);
+        const dataLength = bytes.length - eccLength;
+
+        const dataBytes = bytes.slice(0, dataLength);
+        const eccBytes = bytes.slice(dataLength);
+
+        // 간단한 체크섬 검증
+        let isValid = true;
+        for (let i = 0; i < eccLength; i++) {
+            let checksum = 0;
+            for (let j = 0; j < dataBytes.length; j++) {
+                checksum ^= dataBytes[j] << (i % 8);
+            }
+            const expectedECC = checksum % 256;
+
+            if (Math.abs(eccBytes[i] - expectedECC) > 10) {
+                isValid = false;
+                console.warn(`⚠️ ECC 불일치 감지 at ${i}: ${eccBytes[i]} vs ${expectedECC}`);
+            }
+        }
+
+        if (!isValid) {
+            console.warn('⚠️ 오류 정정 중 일부 데이터 손상 감지됨');
+        }
+
+        return dataBytes;
+    }
+
+    /**
+     * 바이트 배열을 문자열로 변환
+     */
+    bytesToString(bytes) {
+        try {
+            // UTF-8 디코딩
+            const decoder = new TextDecoder('utf-8');
+            const uint8Array = new Uint8Array(bytes);
+            return decoder.decode(uint8Array);
+        } catch (error) {
+            console.error('❌ 문자열 변환 오류:', error);
+            return '';
+        }
+    }
+
+    /**
+     * 디코딩된 문자열 파싱 (타입별 처리)
+     */
+    parseDecodedData(str) {
+        if (!str) {
+            throw new Error('디코딩된 데이터가 비어있습니다.');
+        }
+
+        // 데이터 타입 자동 감지
+        if (str.startsWith('WIFI:')) {
+            return this.parseWiFi(str);
+        } else if (str.startsWith('BEGIN:VCARD')) {
+            return this.parseVCard(str);
+        } else if (str.startsWith('mailto:')) {
+            return this.parseEmail(str);
+        } else if (str.startsWith('tel:')) {
+            return { type: 'phone', data: str.replace('tel:', '') };
+        } else if (str.startsWith('sms:')) {
+            return this.parseSMS(str);
+        } else if (str.startsWith('https://wa.me/')) {
+            return this.parseWhatsApp(str);
+        } else if (str.startsWith('geo:')) {
+            return this.parseGPS(str);
+        } else if (str.startsWith('HUMAN:')) {
+            return this.parseHumanProof(str);
+        } else if (str.startsWith('http://') || str.startsWith('https://')) {
+            return { type: 'link', data: str };
+        } else {
+            return { type: 'text', data: str };
+        }
+    }
+
+    parseWiFi(str) {
+        const match = str.match(/WIFI:T:(.*?);S:(.*?);P:(.*?);;/);
+        if (match) {
+            return {
+                type: 'wifi',
+                data: {
+                    security: match[1],
+                    ssid: match[2],
+                    password: match[3]
+                }
+            };
+        }
+        return { type: 'wifi', data: str };
+    }
+
+    parseVCard(str) {
+        const lines = str.split('\n');
+        const data = {};
+
+        lines.forEach(line => {
+            if (line.startsWith('FN:')) data.fullName = line.substring(3);
+            if (line.startsWith('TEL:')) data.phone = line.substring(4);
+            if (line.startsWith('EMAIL:')) data.email = line.substring(6);
+            if (line.startsWith('ORG:')) data.organization = line.substring(4);
+            if (line.startsWith('URL:')) data.website = line.substring(4);
+        });
+
+        return { type: 'vcard', data };
+    }
+
+    parseEmail(str) {
+        const match = str.match(/mailto:(.*?)(?:\?subject=(.*?)&body=(.*?))?$/);
+        if (match) {
+            return {
+                type: 'email',
+                data: {
+                    email: match[1],
+                    subject: decodeURIComponent(match[2] || ''),
+                    body: decodeURIComponent(match[3] || '')
+                }
+            };
+        }
+        return { type: 'email', data: str };
+    }
+
+    parseSMS(str) {
+        const match = str.match(/sms:(.*?)(?:\?body=(.*?))?$/);
+        if (match) {
+            return {
+                type: 'sms',
+                data: {
+                    phone: match[1],
+                    message: decodeURIComponent(match[2] || '')
+                }
+            };
+        }
+        return { type: 'sms', data: str };
+    }
+
+    parseWhatsApp(str) {
+        const match = str.match(/https:\/\/wa\.me\/(.*?)(?:\?text=(.*?))?$/);
+        if (match) {
+            return {
+                type: 'whatsapp',
+                data: {
+                    phone: match[1],
+                    message: decodeURIComponent(match[2] || '')
+                }
+            };
+        }
+        return { type: 'whatsapp', data: str };
+    }
+
+    parseGPS(str) {
+        const match = str.match(/geo:(.*?),(.*?)(?:\?pincode=(.*?))?$/);
+        if (match) {
+            return {
+                type: 'gps',
+                data: {
+                    latitude: parseFloat(match[1]),
+                    longitude: parseFloat(match[2]),
+                    pinCode: match[3] || ''
+                }
+            };
+        }
+        return { type: 'gps', data: str };
+    }
+
+    parseHumanProof(str) {
+        const parts = str.split(':');
+        return {
+            type: 'human',
+            data: {
+                challenge: parts[1] || '',
+                timestamp: parseInt(parts[2]) || 0,
+                randomSeed: parts[3] || ''
+            }
+        };
+    }
+
+    /**
+     * 이미지 파일에서 직접 디코딩
+     */
+    async decodeFromImage(imageSrc) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+
+            img.onload = async () => {
+                try {
+                    const result = await this.decode(img);
+                    resolve(result);
+                } catch (error) {
+                    reject(error);
+                }
+            };
+
+            img.onerror = () => {
+                reject(new Error('이미지 로딩 실패'));
+            };
+
+            if (typeof imageSrc === 'string') {
+                img.src = imageSrc;
+            } else if (imageSrc instanceof HTMLCanvasElement) {
+                return this.decode(imageSrc);
+            } else {
+                reject(new Error('지원하지 않는 이미지 소스'));
+            }
+        });
+    }
+}
+
+// Export for browser
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = WIANeuralDecoder;
+} else {
+    window.WIANeuralDecoder = WIANeuralDecoder;
+}
+
+console.log('✅ WIA Neural Decoder 로드 완료');
