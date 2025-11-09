@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/png" href="https://wiapincode.com/favicon.png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WIA Pin Code - Universal Location System | 9-Digit Global System</title>
+    <meta name="description" content="Convert any location worldwide into a simple 9-digit universal code. Supporting 206 languages globally. Free universal location system.">
+    <meta name="keywords" content="WIA Pin Code, universal location code, global address system, 9-digit location, GPS alternative, location converter, worldwide addressing, 4D space-time infinite expansion">
+
+    <!-- 기존 meta 태그들 유지 -->
+    <meta property="og:title" content="WIA Pin Code - Universal Location System">
+    <meta property="og:description" content="Convert any location worldwide into a simple 9-digit code">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://wiapincode.com">
+
+    <style>
+        /* 기존 스타일 모두 유지... (너무 길어서 생략) */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header */
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 60px 0;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        header h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .tagline {
+            font-size: 1.4em;
+            margin-bottom: 10px;
+            opacity: 0.95;
+        }
+
+        .sub-tagline {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        /* Main Content */
+        main {
+            padding: 60px 0;
+            background: white;
+        }
+
+        .converter-section {
+            background: linear-gradient(135deg, #f8f9fa 0%, #fff 100%);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-bottom: 60px;
+        }
+
+        .converter-title {
+            text-align: center;
+            font-size: 2em;
+            color: #667eea;
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .input-wrapper {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #666;
+            font-weight: 500;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+
+        button {
+            padding: 15px 40px;
+            font-size: 18px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .btn-secondary:hover {
+            background: #f8f9fa;
+        }
+
+        /* Result Display */
+        .result-display {
+            margin-top: 30px;
+            padding: 30px;
+            background: white;
+            border-radius: 15px;
+            text-align: center;
+            display: none;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .result-display.show {
+            display: block;
+            animation: slideIn 0.5s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .wia-code-result {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #667eea;
+            font-family: 'Courier New', monospace;
+            padding: 20px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 10px;
+            margin: 20px 0;
+            letter-spacing: 2px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.05);
+            border: 2px solid rgba(102, 126, 234, 0.1);
+            cursor: pointer;
+        }
+
+        /* WIA Neural Code Section - 만다라 대체 */
+        .neural-code-section {
+            text-align: center;
+            margin: 60px 0;
+            padding: 40px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 20px;
+        }
+
+        .neural-code-section h2 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .neural-code-subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .neural-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            margin: 10px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .neural-canvas-container {
+            position: relative;
+            max-width: 480px;
+            margin: 30px auto;
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        #neuralCanvas {
+            width: 100%;
+            height: auto;
+            border-radius: 10px;
+            border: 2px dashed #e9ecef;
+        }
+
+        .neural-controls {
+            margin: 30px 0;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .neural-controls select {
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 2px solid #e0e0e0;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .neural-info {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin: 20px auto;
+            max-width: 600px;
+        }
+
+        .neural-info-card {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .neural-info-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .neural-info-label {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        /* 기존 스타일 계속... */
+
+        .wia-4d-section {
+            margin: 80px 0;
+            padding: 60px 0;
+            background: linear-gradient(180deg, #f8f9fa 0%, #fff 100%);
+        }
+
+        .wia-4d-section h2 {
+            text-align: center;
+            color: #667eea;
+            font-size: 2.5em;
+            margin-bottom: 20px;
+        }
+
+        .wia-4d-section .subtitle {
+            text-align: center;
+            color: #666;
+            font-size: 1.2em;
+            margin-bottom: 60px;
+        }
+
+        .examples-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+            margin-bottom: 50px;
+        }
+
+        .example-card {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            text-align: center;
+            transition: transform 0.3s;
+        }
+
+        .example-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .example-card .icon {
+            font-size: 3em;
+            margin-bottom: 20px;
+        }
+
+        .example-card h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+
+        .example-card .wia-code {
+            font-family: 'Courier New', monospace;
+            font-size: 1.8em;
+            color: #764ba2;
+            font-weight: bold;
+            margin: 15px 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 2.5em;
+            }
+
+            .tagline {
+                font-size: 1.2em;
+            }
+
+            .input-group {
+                flex-direction: column;
+            }
+
+            .button-group {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .examples-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .neural-info {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .wia-code-result {
+                font-size: 2em;
+                letter-spacing: 1px;
+            }
+
+            .example-card .wia-code {
+                font-size: 1.5em;
+            }
+
+            #neuralCanvas {
+                width: 100%;
+                height: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>🌍 WIA Pin Code</h1>
+            <p class="tagline">Where In Anywhere - 9-Digit Global System</p>
+            <p class="sub-tagline">9-Digit + 4D Space-Time Infinite Expansion • 206 Languages Supported</p>
+        </div>
+    </header>
+
+    <main>
+        <div class="container">
+            <!-- WIA Pin Code Generator -->
+            <section class="converter-section">
+                <h2 class="converter-title">🎯 WIA Pin Code Generator</h2>
+
+                <div class="input-group">
+                    <div class="input-wrapper">
+                        <label for="latitude">위도 (Latitude) *</label>
+                        <input type="number" id="latitude" step="any" placeholder="37.5665" required>
+                    </div>
+                    <div class="input-wrapper">
+                        <label for="longitude">경도 (Longitude) *</label>
+                        <input type="number" id="longitude" step="any" placeholder="126.9780" required>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <div class="input-wrapper">
+                        <label for="floor">층수 (Floor) - 선택사항</label>
+                        <input type="text" id="floor" placeholder="15 또는 -2 (지하2층)">
+                    </div>
+                    <div class="input-wrapper">
+                        <label for="time">시간 (Time) - 선택사항</label>
+                        <input type="time" id="time" placeholder="14:30">
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn-primary" onclick="generateWIACode()">🎯 WIA Pin Code 생성</button>
+                    <button class="btn-secondary" onclick="getCurrentLocation()">📍 현재 위치 사용</button>
+                </div>
+
+                <div class="result-display" id="result">
+                    <p style="margin-bottom: 10px; color: #666;">Your WIA Pin Code:</p>
+                    <div class="wia-code-result" id="wiaCodeDisplay"></div>
+                    <p style="color: #666; font-size: 0.9em; margin-bottom: 20px;">Click to copy • Country-3-3-3 Format</p>
+                </div>
+            </section>
+
+            <!-- WIA Neural Code Section - 만다라 대체! -->
+            <section class="neural-code-section">
+                <h2>🧠 WIA Neural Code</h2>
+                <p class="neural-code-subtitle">
+                    각 WIA Pin Code는 고유한 Neural 패턴으로 인코딩됩니다
+                    <span class="neural-badge">🔴 LIVE Preview</span>
+                    <span class="neural-badge">✅ QR 대체</span>
+                </p>
+
+                <div class="neural-canvas-container">
+                    <canvas id="neuralCanvas" width="480" height="480"></canvas>
+                </div>
+
+                <div class="neural-info">
+                    <div class="neural-info-card">
+                        <div class="neural-info-value" id="dataSize">0</div>
+                        <div class="neural-info-label">바이트</div>
+                    </div>
+                    <div class="neural-info-card">
+                        <div class="neural-info-value" id="neuronCount">0</div>
+                        <div class="neural-info-label">뉴런</div>
+                    </div>
+                    <div class="neural-info-card">
+                        <div class="neural-info-value" id="connectionCount">0</div>
+                        <div class="neural-info-label">연결선</div>
+                    </div>
+                </div>
+
+                <div class="neural-controls">
+                    <label for="markerShape">마커 모양:</label>
+                    <select id="markerShape" onchange="regenerateNeuralCode()">
+                        <option value="triangle">🔺 삼각형 (기본)</option>
+                        <option value="heart">❤️ 하트</option>
+                        <option value="star">⭐ 별</option>
+                        <option value="diamond">◆ 다이아몬드</option>
+                        <option value="moon">🌙 달</option>
+                        <option value="lightning">⚡ 번개</option>
+                    </select>
+                    <button class="btn-secondary" onclick="regenerateNeuralCode()">🔄 새로고침</button>
+                    <button class="btn-primary" onclick="downloadNeuralCode()">💾 PNG 다운로드</button>
+                </div>
+
+                <p style="margin-top: 20px; color: #999; font-size: 0.9em;">
+                    💡 다운로드한 이미지를
+                    <a href="./wia-neural-reader.html" target="_blank" style="color: #667eea; text-decoration: none;">
+                        WIA Neural Reader
+                    </a>에서 스캔하면 WIA Pin Code가 복원됩니다!
+                </p>
+            </section>
+
+            <!-- 4D Examples -->
+            <section class="wia-4d-section">
+                <div class="container">
+                    <h2>🚀 WIA Pin Code 9-Digit + 4D Infinite Expansion</h2>
+                    <p class="subtitle">9-Digit Base Location + Mathematical Symbols for Floor·Time·Zone Infinite Expansion</p>
+
+                    <div class="examples-grid">
+                        <div class="example-card">
+                            <div class="icon">🏥</div>
+                            <h3>Hospital Booking (NYC)</h3>
+                            <div class="wia-code">1-407-738-521.-2.0830</div>
+                            <p>Mount Sinai Hospital B2, Radiology, 8:30 AM</p>
+                        </div>
+
+                        <div class="example-card">
+                            <div class="icon">🚁</div>
+                            <h3>Drone Delivery (NYC)</h3>
+                            <div class="wia-code">1-407-738-521.102.1415</div>
+                            <p>Empire State Building 102F, 2:15 PM</p>
+                        </div>
+
+                        <div class="example-card">
+                            <div class="icon">🅿️</div>
+                            <h3>Smart Parking (NYC)</h3>
+                            <div class="wia-code">1-407-738-521.-4.1930</div>
+                            <p>Times Square Garage P4, 7:30 PM</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- WIA Neural Code 라이브러리 -->
+    <script src="./assets/js/wia-neural-encoder.js"></script>
+    <script src="./assets/js/wia-neural-decoder.js"></script>
+    <script src="./assets/js/wia-engine.js"></script>
+
+    <script>
+        // WIA Pin Code Generation Logic
+        let currentWIACode = '';
+        let encoder = null;
+        let engine = null;
+
+        // 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🧠 WIA Pin Code + Neural Code 시스템 초기화...');
+
+            try {
+                encoder = new WIANeuralEncoder();
+                const canvas = document.getElementById('neuralCanvas');
+                engine = new WIANeuralEngine(canvas);
+
+                // 초기 기본 패턴 표시
+                engine.generate('WIA Pin Code', 'triangle', 'high');
+
+                console.log('✅ 초기화 완료!');
+            } catch (error) {
+                console.error('❌ 초기화 오류:', error);
+            }
+
+            // Copy to clipboard 이벤트
+            const resultDiv = document.getElementById('wiaCodeDisplay');
+            if (resultDiv) {
+                resultDiv.addEventListener('click', function() {
+                    const code = this.textContent;
+                    navigator.clipboard.writeText(code).then(function() {
+                        alert('WIA Pin Code copied to clipboard!');
+                    });
+                });
+            }
+        });
+
+        function generateWIACode() {
+            const lat = parseFloat(document.getElementById('latitude').value);
+            const lng = parseFloat(document.getElementById('longitude').value);
+            const floor = document.getElementById('floor').value;
+            const time = document.getElementById('time').value;
+
+            if (isNaN(lat) || isNaN(lng)) {
+                alert('Please enter valid coordinates');
+                return;
+            }
+
+            // Get country code
+            const countryCode = getCountryCode(lat, lng);
+
+            // Convert coordinates to WIA format (YUJIN Transform)
+            const normalizedLat = Math.floor(((lat + 90) / 180) * 999999);
+            const normalizedLng = Math.floor(((lng + 180) / 360) * 999);
+
+            const latPart = normalizedLat.toString().padStart(6, '0');
+            const lngPart = normalizedLng.toString().padStart(3, '0');
+
+            // Create base WIA code
+            let wiaCode = `${countryCode}-${latPart.substring(0,3)}-${latPart.substring(3,6)}-${lngPart}`;
+
+            // Add floor if provided
+            if (floor && floor.trim() !== '') {
+                wiaCode += `.${floor}`;
+
+                // Add time if provided
+                if (time && time.trim() !== '') {
+                    const timeFormatted = time.replace(':', '');
+                    wiaCode += `.${timeFormatted}`;
+                }
+            }
+
+            // Display WIA Pin Code
+            currentWIACode = wiaCode;
+            document.getElementById('wiaCodeDisplay').textContent = wiaCode;
+            document.getElementById('result').classList.add('show');
+
+            // Generate WIA Neural Code
+            generateNeuralCodeFromWIA(wiaCode);
+        }
+
+        function generateNeuralCodeFromWIA(wiaCode) {
+            try {
+                console.log('🧠 WIA Neural Code 생성:', wiaCode);
+
+                // WIA Pin Code를 데이터로 인코딩
+                const pattern = encoder.encode('text', { content: wiaCode });
+
+                // Canvas에 렌더링
+                const markerType = document.getElementById('markerShape').value;
+                engine.generate(wiaCode, markerType, 'high');
+
+                // 정보 업데이트
+                document.getElementById('dataSize').textContent = pattern.metadata.dataSize;
+                document.getElementById('neuronCount').textContent = pattern.neurons.length;
+                document.getElementById('connectionCount').textContent = pattern.connections.length;
+
+                console.log('✅ Neural Code 생성 완료!');
+
+            } catch (error) {
+                console.error('❌ Neural Code 생성 오류:', error);
+            }
+        }
+
+        function regenerateNeuralCode() {
+            if (currentWIACode) {
+                generateNeuralCodeFromWIA(currentWIACode);
+            } else {
+                // 기본 패턴
+                const markerType = document.getElementById('markerShape').value;
+                engine.generate('WIA Pin Code', markerType, 'high');
+            }
+        }
+
+        function downloadNeuralCode() {
+            const canvas = document.getElementById('neuralCanvas');
+            const wiaCode = currentWIACode || 'WIA-Pin-Code';
+
+            if (canvas) {
+                const link = document.createElement('a');
+                link.download = `WIA-Neural-Code-${wiaCode}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+
+                console.log('✅ Neural Code PNG 다운로드:', link.download);
+            }
+        }
+
+        function getCountryCode(lat, lng) {
+            // South Korea
+            if (lat >= 33 && lat <= 43 && lng >= 124 && lng <= 132) return '82';
+            // Japan
+            if (lat >= 24 && lat <= 46 && lng >= 123 && lng <= 146) return '81';
+            // China
+            if (lat >= 18 && lat <= 54 && lng >= 73 && lng <= 135) return '86';
+            // USA
+            if (lat >= 25 && lat <= 49 && lng >= -125 && lng <= -66) return '1';
+            // Default to South Korea
+            return '82';
+        }
+
+        function getCurrentLocation() {
+            if (navigator.geolocation) {
+                document.getElementById('result').innerHTML = '<p style="color: #666;">📍 Getting your location...</p>';
+                document.getElementById('result').classList.add('show');
+
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    document.getElementById('latitude').value = position.coords.latitude.toFixed(4);
+                    document.getElementById('longitude').value = position.coords.longitude.toFixed(4);
+
+                    document.getElementById('result').innerHTML = `
+                        <p style="margin-bottom: 10px; color: #666;">Your WIA Pin Code:</p>
+                        <div class="wia-code-result" id="wiaCodeDisplay"></div>
+                        <p style="color: #666; font-size: 0.9em; margin-bottom: 20px;">Click to copy • Country-3-3-3 Format</p>
+                    `;
+
+                    generateWIACode();
+                }, function(error) {
+                    document.getElementById('result').innerHTML = '';
+                    document.getElementById('result').classList.remove('show');
+                    alert('Unable to get your location. Please enter manually.');
+                });
+            } else {
+                alert('Geolocation is not supported by your browser.');
+            }
+        }
+
+        // Enter key support
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                generateWIACode();
+            }
+        });
+    </script>
+</body>
+</html>
