@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📱 WIA Neural Scanner - Mobile</title>
+    <link rel="icon" type="image/png" href="https://wiacode.com/wia_logo.png">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans KR', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 0;
+        }
+
+        /* Mobile-Optimized Container */
+        .mobile-container {
+            max-width: 100%;
+            min-height: 100vh;
+            background: white;
+        }
+
+        /* Header */
+        .mobile-header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .mobile-header h1 {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .mobile-header p {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        /* Scanner Section */
+        .scanner-section {
+            padding: 20px;
+        }
+
+        .scan-methods {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .scan-btn {
+            padding: 30px 20px;
+            border: 2px solid #e9ecef;
+            border-radius: 15px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .scan-btn:active {
+            transform: scale(0.95);
+        }
+
+        .scan-btn.active {
+            border-color: #667eea;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .scan-icon {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            color: #667eea;
+        }
+
+        .scan-label {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        /* Camera Section */
+        .camera-container {
+            position: relative;
+            width: 100%;
+            background: #000;
+            border-radius: 15px;
+            overflow: hidden;
+            display: none;
+            margin-bottom: 20px;
+        }
+
+        .camera-container.active {
+            display: block;
+        }
+
+        #videoElement {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .camera-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            height: 60%;
+            border: 3px solid rgba(102, 126, 234, 0.8);
+            border-radius: 15px;
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+        }
+
+        .scan-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #667eea;
+            animation: scan 2s linear infinite;
+        }
+
+        @keyframes scan {
+            0%, 100% { top: 0; }
+            50% { top: 100%; }
+        }
+
+        .camera-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+        }
+
+        .camera-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: none;
+            background: white;
+            color: #667eea;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s;
+        }
+
+        .camera-btn:active {
+            transform: scale(0.9);
+        }
+
+        .camera-btn.capture {
+            width: 70px;
+            height: 70px;
+            background: #667eea;
+            color: white;
+        }
+
+        /* Canvas Preview */
+        #canvasElement {
+            display: none;
+        }
+
+        /* Upload Section */
+        .upload-container {
+            display: none;
+            margin-bottom: 20px;
+        }
+
+        .upload-container.active {
+            display: block;
+        }
+
+        .upload-area {
+            border: 3px dashed #e9ecef;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            background: #f8f9fa;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .upload-area:hover {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        /* Result Section */
+        .result-container {
+            display: none;
+            padding: 20px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .result-container.show {
+            display: block;
+            animation: slideUp 0.5s;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .result-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .result-icon {
+            font-size: 2rem;
+            color: #667eea;
+        }
+
+        .result-type {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #495057;
+        }
+
+        .result-data {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .result-label {
+            font-size: 0.85rem;
+            color: #6c757d;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .result-value {
+            font-size: 1.1rem;
+            color: #212529;
+            word-break: break-all;
+            margin-bottom: 15px;
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .action-btn {
+            padding: 15px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .action-btn:active {
+            transform: scale(0.95);
+        }
+
+        .action-btn.secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        /* Loading Spinner */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Status Messages */
+        .status-message {
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .status-message.show {
+            display: block;
+        }
+
+        .status-message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status-message.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        /* Image Preview */
+        .image-preview {
+            max-width: 100%;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            padding: 15px 20px;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+
+        .bottom-nav.show {
+            display: block;
+        }
+
+        .nav-btn {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            font-weight: bold;
+            font-size: 1.1rem;
+            cursor: pointer;
+        }
+
+        .nav-btn:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body>
+    <div class="mobile-container">
+        <!-- Header -->
+        <div class="mobile-header">
+            <h1>📱 WIA Neural Scanner</h1>
+            <p>차세대 코드 스캐너</p>
+        </div>
+
+        <!-- Scanner Section -->
+        <div class="scanner-section">
+            <!-- Scan Methods -->
+            <div class="scan-methods">
+                <div class="scan-btn active" id="cameraBtn" onclick="selectMethod('camera')">
+                    <div class="scan-icon">📷</div>
+                    <div class="scan-label">카메라 스캔</div>
+                </div>
+                <div class="scan-btn" id="galleryBtn" onclick="selectMethod('gallery')">
+                    <div class="scan-icon">🖼️</div>
+                    <div class="scan-label">갤러리 업로드</div>
+                </div>
+            </div>
+
+            <!-- Status Message -->
+            <div class="status-message" id="statusMessage"></div>
+
+            <!-- Camera Container -->
+            <div class="camera-container active" id="cameraContainer">
+                <video id="videoElement" autoplay playsinline></video>
+                <div class="camera-overlay">
+                    <div class="scan-line"></div>
+                </div>
+                <div class="camera-controls">
+                    <button class="camera-btn" onclick="switchCamera()" title="카메라 전환">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                    <button class="camera-btn capture" onclick="captureImage()" title="스캔">
+                        <i class="fas fa-camera"></i>
+                    </button>
+                    <button class="camera-btn" onclick="stopCamera()" title="중지">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Upload Container -->
+            <div class="upload-container" id="uploadContainer">
+                <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                    <div class="upload-icon">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                    </div>
+                    <div class="upload-label">
+                        <strong>이미지 선택</strong><br>
+                        <small>WIA Neural Code 이미지를 선택하세요</small>
+                    </div>
+                </div>
+                <input type="file" id="fileInput" accept="image/*" onchange="handleFileUpload(event)">
+            </div>
+
+            <!-- Loading -->
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Neural Code 분석 중...</p>
+            </div>
+
+            <!-- Result Container -->
+            <div class="result-container" id="resultContainer">
+                <div class="result-header">
+                    <div class="result-icon" id="resultIcon">📝</div>
+                    <div class="result-type" id="resultType">텍스트</div>
+                </div>
+
+                <div class="result-data" id="resultData">
+                    <!-- Dynamic content -->
+                </div>
+
+                <div class="action-buttons" id="actionButtons">
+                    <!-- Dynamic buttons -->
+                </div>
+
+                <div class="action-buttons mt-3">
+                    <button class="action-btn secondary" onclick="copyToClipboard()">
+                        <i class="fas fa-copy"></i> 복사
+                    </button>
+                    <button class="action-btn secondary" onclick="shareResult()">
+                        <i class="fas fa-share-alt"></i> 공유
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Navigation -->
+        <div class="bottom-nav" id="bottomNav">
+            <button class="nav-btn" onclick="scanAgain()">
+                <i class="fas fa-qrcode"></i> 다시 스캔하기
+            </button>
+        </div>
+    </div>
+
+    <!-- Hidden Canvas -->
+    <canvas id="canvasElement"></canvas>
+
+    <!-- Scripts -->
+    <script src="assets/js/wia-neural-encoder.js"></script>
+    <script src="assets/js/wia-neural-decoder.js"></script>
+    <script src="assets/js/wia-engine.js"></script>
+
+    <script>
+        // Global Variables
+        let videoStream = null;
+        let currentFacingMode = 'environment';
+        let decoder = new WIANeuralDecoder();
+        let currentResult = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            // Auto-start camera on mobile
+            if (isMobile()) {
+                startCamera();
+            }
+        });
+
+        // Detect Mobile
+        function isMobile() {
+            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        }
+
+        // Select Method
+        function selectMethod(method) {
+            // Update buttons
+            document.querySelectorAll('.scan-btn').forEach(btn => btn.classList.remove('active'));
+
+            if (method === 'camera') {
+                document.getElementById('cameraBtn').classList.add('active');
+                document.getElementById('cameraContainer').classList.add('active');
+                document.getElementById('uploadContainer').classList.remove('active');
+                startCamera();
+            } else {
+                document.getElementById('galleryBtn').classList.add('active');
+                document.getElementById('cameraContainer').classList.remove('active');
+                document.getElementById('uploadContainer').classList.add('active');
+                stopCamera();
+            }
+        }
+
+        // Start Camera
+        async function startCamera() {
+            try {
+                showStatus('카메라 시작 중...', 'info');
+
+                const constraints = {
+                    video: {
+                        facingMode: currentFacingMode,
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
+                    }
+                };
+
+                videoStream = await navigator.mediaDevices.getUserMedia(constraints);
+                const video = document.getElementById('videoElement');
+                video.srcObject = videoStream;
+
+                hideStatus();
+
+            } catch (error) {
+                console.error('카메라 오류:', error);
+                showStatus('카메라를 시작할 수 없습니다. 권한을 확인하세요.', 'error');
+            }
+        }
+
+        // Stop Camera
+        function stopCamera() {
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+                videoStream = null;
+            }
+        }
+
+        // Switch Camera
+        async function switchCamera() {
+            currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+            stopCamera();
+            await startCamera();
+        }
+
+        // Capture Image
+        async function captureImage() {
+            try {
+                const video = document.getElementById('videoElement');
+                const canvas = document.getElementById('canvasElement');
+
+                // Set canvas size
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+
+                // Draw video frame to canvas
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0);
+
+                // Show loading
+                showLoading();
+
+                // Decode with WIANeuralDecoder
+                const result = await decoder.decodeFromCanvas(canvas);
+
+                // Hide loading
+                hideLoading();
+
+                if (result && result.success) {
+                    displayResult(result);
+                } else {
+                    showStatus('Neural Code를 인식할 수 없습니다. 다시 시도하세요.', 'error');
+                }
+
+            } catch (error) {
+                console.error('스캔 오류:', error);
+                hideLoading();
+                showStatus('스캔 실패: ' + error.message, 'error');
+            }
+        }
+
+        // Handle File Upload
+        async function handleFileUpload(event) {
+            try {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                showLoading();
+
+                // Load image
+                const img = new Image();
+                const reader = new FileReader();
+
+                reader.onload = async function(e) {
+                    img.src = e.target.result;
+
+                    img.onload = async function() {
+                        const canvas = document.getElementById('canvasElement');
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0);
+
+                        // Decode
+                        const result = await decoder.decodeFromCanvas(canvas);
+
+                        hideLoading();
+
+                        if (result && result.success) {
+                            displayResult(result);
+                        } else {
+                            showStatus('Neural Code를 인식할 수 없습니다.', 'error');
+                        }
+                    };
+                };
+
+                reader.readAsDataURL(file);
+
+            } catch (error) {
+                console.error('업로드 오류:', error);
+                hideLoading();
+                showStatus('파일 처리 실패: ' + error.message, 'error');
+            }
+        }
+
+        // Display Result
+        function displayResult(result) {
+            currentResult = result;
+
+            // Hide scanner, show result
+            document.getElementById('cameraContainer').style.display = 'none';
+            document.getElementById('uploadContainer').style.display = 'none';
+            document.getElementById('resultContainer').classList.add('show');
+            document.getElementById('bottomNav').classList.add('show');
+
+            // Set icon and type
+            const typeInfo = getTypeInfo(result.dataType);
+            document.getElementById('resultIcon').textContent = typeInfo.icon;
+            document.getElementById('resultType').textContent = typeInfo.label;
+
+            // Display data
+            const resultData = document.getElementById('resultData');
+            resultData.innerHTML = formatResultData(result);
+
+            // Display action buttons
+            const actionButtons = document.getElementById('actionButtons');
+            actionButtons.innerHTML = generateActionButtons(result);
+
+            showStatus('스캔 성공!', 'success');
+        }
+
+        // Get Type Info
+        function getTypeInfo(type) {
+            const types = {
+                'text': { icon: '📝', label: '텍스트' },
+                'link': { icon: '🔗', label: '링크' },
+                'url': { icon: '🔗', label: '링크' },
+                'wifi': { icon: '📶', label: 'WiFi' },
+                'vcard': { icon: '👤', label: '명함' },
+                'email': { icon: '📧', label: '이메일' },
+                'phone': { icon: '📞', label: '전화' },
+                'sms': { icon: '💬', label: 'SMS' },
+                'event': { icon: '📅', label: '이벤트' },
+                'whatsapp': { icon: '💚', label: 'WhatsApp' },
+                'crypto': { icon: '₿', label: '암호화폐' },
+                'gps': { icon: '📍', label: 'GPS' },
+                'application': { icon: '📱', label: '앱' },
+                'file': { icon: '📄', label: '파일' }
+            };
+            return types[type] || { icon: '📋', label: '데이터' };
+        }
+
+        // Format Result Data
+        function formatResultData(result) {
+            let html = '';
+
+            if (result.dataType === 'text') {
+                html = `
+                    <div class="result-label">내용</div>
+                    <div class="result-value">${escapeHtml(result.data.content || result.decodedData)}</div>
+                `;
+            } else if (result.dataType === 'link' || result.dataType === 'url') {
+                html = `
+                    <div class="result-label">URL</div>
+                    <div class="result-value">${escapeHtml(result.data.url || result.decodedData)}</div>
+                `;
+            } else if (result.dataType === 'wifi') {
+                html = `
+                    <div class="result-label">네트워크 이름 (SSID)</div>
+                    <div class="result-value">${escapeHtml(result.data.ssid)}</div>
+                    <div class="result-label">비밀번호</div>
+                    <div class="result-value">${escapeHtml(result.data.password)}</div>
+                    <div class="result-label">보안 방식</div>
+                    <div class="result-value">${escapeHtml(result.data.security)}</div>
+                `;
+            } else if (result.dataType === 'vcard') {
+                html = `
+                    <div class="result-label">이름</div>
+                    <div class="result-value">${escapeHtml(result.data.name)}</div>
+                    <div class="result-label">전화번호</div>
+                    <div class="result-value">${escapeHtml(result.data.phone)}</div>
+                    <div class="result-label">이메일</div>
+                    <div class="result-value">${escapeHtml(result.data.email)}</div>
+                `;
+            } else if (result.dataType === 'phone') {
+                html = `
+                    <div class="result-label">전화번호</div>
+                    <div class="result-value">${escapeHtml(result.data.phone || result.decodedData)}</div>
+                `;
+            } else {
+                // Generic display
+                html = `
+                    <div class="result-label">데이터</div>
+                    <div class="result-value">${escapeHtml(JSON.stringify(result.data, null, 2))}</div>
+                `;
+            }
+
+            return html;
+        }
+
+        // Generate Action Buttons
+        function generateActionButtons(result) {
+            let buttons = '';
+
+            if (result.dataType === 'link' || result.dataType === 'url') {
+                buttons += `<button class="action-btn" onclick="openLink()"><i class="fas fa-external-link-alt"></i> 링크 열기</button>`;
+            } else if (result.dataType === 'phone') {
+                buttons += `<button class="action-btn" onclick="makeCall()"><i class="fas fa-phone"></i> 전화 걸기</button>`;
+            } else if (result.dataType === 'email') {
+                buttons += `<button class="action-btn" onclick="sendEmail()"><i class="fas fa-envelope"></i> 이메일 보내기</button>`;
+            } else if (result.dataType === 'sms') {
+                buttons += `<button class="action-btn" onclick="sendSMS()"><i class="fas fa-comment"></i> SMS 보내기</button>`;
+            } else if (result.dataType === 'wifi') {
+                buttons += `<button class="action-btn" onclick="connectWiFi()"><i class="fas fa-wifi"></i> WiFi 연결</button>`;
+            } else if (result.dataType === 'vcard') {
+                buttons += `<button class="action-btn" onclick="saveContact()"><i class="fas fa-user-plus"></i> 연락처 저장</button>`;
+            } else if (result.dataType === 'gps') {
+                buttons += `<button class="action-btn" onclick="openMap()"><i class="fas fa-map-marked-alt"></i> 지도 열기</button>`;
+            }
+
+            return buttons;
+        }
+
+        // Action Functions
+        function openLink() {
+            const url = currentResult.data.url || currentResult.decodedData;
+            window.open(url, '_blank');
+        }
+
+        function makeCall() {
+            const phone = currentResult.data.phone || currentResult.decodedData.replace('tel:', '');
+            window.location.href = `tel:${phone}`;
+        }
+
+        function sendEmail() {
+            const email = currentResult.data.to;
+            const subject = currentResult.data.subject || '';
+            const body = currentResult.data.body || '';
+            window.location.href = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        }
+
+        function sendSMS() {
+            const phone = currentResult.data.phone;
+            const message = currentResult.data.message || '';
+            window.location.href = `sms:${phone}?body=${encodeURIComponent(message)}`;
+        }
+
+        function connectWiFi() {
+            alert('WiFi 연결 기능은 네이티브 앱에서 지원됩니다.');
+        }
+
+        function saveContact() {
+            alert('연락처 저장 기능은 네이티브 앱에서 지원됩니다.');
+        }
+
+        function openMap() {
+            const lat = currentResult.data.lat;
+            const lng = currentResult.data.lng;
+            window.open(`https://www.google.com/maps?q=${lat},${lng}`, '_blank');
+        }
+
+        // Copy to Clipboard
+        async function copyToClipboard() {
+            try {
+                const text = JSON.stringify(currentResult.data, null, 2);
+                await navigator.clipboard.writeText(text);
+                showStatus('클립보드에 복사되었습니다!', 'success');
+            } catch (error) {
+                console.error('복사 오류:', error);
+                showStatus('복사 실패', 'error');
+            }
+        }
+
+        // Share Result
+        async function shareResult() {
+            try {
+                if (navigator.share) {
+                    await navigator.share({
+                        title: 'WIA Neural Code 스캔 결과',
+                        text: JSON.stringify(currentResult.data, null, 2)
+                    });
+                } else {
+                    showStatus('공유 기능을 지원하지 않는 브라우저입니다.', 'error');
+                }
+            } catch (error) {
+                console.error('공유 오류:', error);
+            }
+        }
+
+        // Scan Again
+        function scanAgain() {
+            document.getElementById('resultContainer').classList.remove('show');
+            document.getElementById('bottomNav').classList.remove('show');
+            document.getElementById('cameraContainer').style.display = '';
+            selectMethod('camera');
+        }
+
+        // Show Status
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.textContent = message;
+            statusDiv.className = `status-message ${type} show`;
+
+            if (type === 'success' || type === 'info') {
+                setTimeout(() => {
+                    statusDiv.classList.remove('show');
+                }, 3000);
+            }
+        }
+
+        // Hide Status
+        function hideStatus() {
+            document.getElementById('statusMessage').classList.remove('show');
+        }
+
+        // Show/Hide Loading
+        function showLoading() {
+            document.getElementById('loading').classList.add('show');
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').classList.remove('show');
+        }
+
+        // Escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', function() {
+            stopCamera();
+        });
+    </script>
+</body>
+</html>
