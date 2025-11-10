@@ -21,17 +21,14 @@ class WIANeuralDecoder {
         this.NEURON_COLOR = { r: 102, g: 126, b: 234 };  // 청보라색 (백업 파일과 동일)
         this.CONNECTION_COLOR = { r: 118, g: 75, b: 162 }; // 진한 보라 (백업 파일과 동일)
 
-        // 3개의 다른 마커 색상 (백업 파일의 정확한 사양)
-        this.MARKER_COLORS = {
-            top: { r: 255, g: 0, b: 110 },      // #ff006e 핑크
-            left: { r: 0, g: 180, b: 216 },     // #00b4d8 하늘색
-            right: { r: 114, g: 9, b: 183 }     // #7209b7 보라색
-        };
+        // QR 스타일 마커 (검정 사각형)
+        this.MARKER_COLOR = { r: 0, g: 0, b: 0 };         // 순수 검정
+        this.MARKER_SIZE = 60;                             // 60x60px
 
         // 색상 허용 범위
         this.NEURON_TOLERANCE = 35;    // 뉴런 (청보라색, 넓은 범위)
         this.CONNECTION_TOLERANCE = 35; // 연결선 (진한 보라)
-        this.MARKER_TOLERANCE = 40;    // 마커
+        this.MARKER_TOLERANCE = 30;    // 마커 (검정, 좁은 범위)
     }
 
     /**
@@ -44,15 +41,18 @@ class WIANeuralDecoder {
             // 1. 이미지 데이터 추출
             const imageData = this.extractImageData(source);
 
-            // 2. 마커 감지 (방향 및 유효성 확인)
+            // 2. 마커 감지 (QR 스타일 패턴 확인)
             const markers = this.detectMarkers(imageData);
             if (markers.length < 3) {
+                const size = this.MARKER_SIZE;
+                const w = imageData.width;
+                const h = imageData.height;
                 const debugInfo = this.sampleColorsAtPositions(imageData, [
-                    { x: 60, y: 60 },
-                    { x: imageData.width - 60, y: 60 },
-                    { x: 60, y: imageData.height - 60 }
+                    { x: Math.floor(size / 2), y: Math.floor(size / 2) },
+                    { x: w - Math.floor(size / 2), y: Math.floor(size / 2) },
+                    { x: Math.floor(size / 2), y: h - Math.floor(size / 2) }
                 ]);
-                throw new Error(`마커를 감지할 수 없습니다 (${markers.length}/3). 샘플 색상: ${JSON.stringify(debugInfo)}`);
+                throw new Error(`QR 마커를 감지할 수 없습니다 (${markers.length}/3). 샘플: ${JSON.stringify(debugInfo)}`);
             }
 
             // 3. 뉴런 위치 감지
@@ -113,95 +113,80 @@ class WIANeuralDecoder {
     }
 
     /**
-     * 마커 감지 (3개 위치 확인 - 백업 파일의 정확한 사양)
+     * 마커 감지 - QR 스타일 (검정-흰색-검정 패턴)
      */
     detectMarkers(imageData) {
         const w = imageData.width;
         const h = imageData.height;
         const data = imageData.data;
+        const size = this.MARKER_SIZE;
 
-        // 예상 마커 위치와 색상 (백업 파일과 동일)
-        const expectedMarkers = [
-            {
-                name: 'top',
-                x: Math.round(w / 2),      // 가로 중앙
-                y: 30,                      // 상단 30px
-                color: this.MARKER_COLORS.top,
-                tolerance: this.MARKER_TOLERANCE
-            },
-            {
-                name: 'left',
-                x: 30,                      // 좌측 30px
-                y: h - 30,                  // 하단 30px
-                color: this.MARKER_COLORS.left,
-                tolerance: this.MARKER_TOLERANCE
-            },
-            {
-                name: 'right',
-                x: w - 30,                  // 우측 30px
-                y: h - 30,                  // 하단 30px
-                color: this.MARKER_COLORS.right,
-                tolerance: this.MARKER_TOLERANCE
-            }
+        // 3개 마커 예상 위치 (QR와 동일 - 좌상, 우상, 좌하)
+        const expectedPositions = [
+            { name: 'top-left', x: Math.floor(size / 2), y: Math.floor(size / 2) },
+            { name: 'top-right', x: w - Math.floor(size / 2), y: Math.floor(size / 2) },
+            { name: 'bottom-left', x: Math.floor(size / 2), y: h - Math.floor(size / 2) }
         ];
 
         const foundMarkers = [];
 
-        for (const expected of expectedMarkers) {
-            // 좌표 유효성 검사
-            if (expected.x < 0 || expected.x >= w || expected.y < 0 || expected.y >= h) {
-                continue;
-            }
-
-            // 마커 주변 영역 검사 (반경 50px - 마커 크기 고려)
-            let markerFound = false;
-            const searchRadius = 50;
-
-            for (let dy = -searchRadius; dy <= searchRadius; dy += 5) {
-                for (let dx = -searchRadius; dx <= searchRadius; dx += 5) {
-                    const checkX = Math.round(expected.x + dx);
-                    const checkY = Math.round(expected.y + dy);
-
-                    if (checkX < 0 || checkX >= w || checkY < 0 || checkY >= h) continue;
-
-                    const idx = (checkY * w + checkX) * 4;
-                    const r = data[idx];
-                    const g = data[idx + 1];
-                    const b = data[idx + 2];
-
-                    // 해당 마커의 색상 검출
-                    if (Math.abs(r - expected.color.r) < expected.tolerance &&
-                        Math.abs(g - expected.color.g) < expected.tolerance &&
-                        Math.abs(b - expected.color.b) < expected.tolerance) {
-
-                        foundMarkers.push({
-                            name: expected.name,
-                            x: checkX,
-                            y: checkY,
-                            color: { r, g, b }
-                        });
-                        markerFound = true;
-                        break;
-                    }
-                }
-                if (markerFound) break;
-            }
-
-            if (!markerFound) {
-                // 디버깅: 예상 위치의 실제 색상
-                const idx = (expected.y * w + expected.x) * 4;
-                console.warn(`❌ ${expected.name} 마커 못찾음. 예상 위치 색상:`, {
-                    x: expected.x,
-                    y: expected.y,
-                    r: data[idx],
-                    g: data[idx + 1],
-                    b: data[idx + 2],
-                    expected: expected.color
+        for (const pos of expectedPositions) {
+            // QR 마커 패턴 검증: 검정-흰색-검정
+            if (this.isQRMarkerPattern(data, w, h, pos.x, pos.y, size)) {
+                foundMarkers.push({
+                    name: pos.name,
+                    x: pos.x,
+                    y: pos.y
                 });
+            } else {
+                console.warn(`❌ ${pos.name} QR 마커 패턴 불일치`);
             }
         }
 
         return foundMarkers;
+    }
+
+    /**
+     * QR 마커 패턴 확인 (검정-흰색-검정)
+     */
+    isQRMarkerPattern(data, width, height, centerX, centerY, markerSize) {
+        const stepSize = Math.floor(markerSize / 7);  // 7등분
+
+        // 3개 지점 샘플링: 외곽(검정), 중간(흰색), 중심(검정)
+        const samples = [
+            { name: '외곽', offset: -3 * stepSize, expectBlack: true },
+            { name: '중간', offset: -1 * stepSize, expectBlack: false },
+            { name: '중심', offset: 0, expectBlack: true }
+        ];
+
+        for (const sample of samples) {
+            const x = centerX + sample.offset;
+            const y = centerY;
+
+            if (x < 0 || x >= width || y < 0 || y >= height) continue;
+
+            const idx = (y * width + x) * 4;
+            const r = data[idx];
+            const g = data[idx + 1];
+            const b = data[idx + 2];
+
+            const isBlack = (r < this.MARKER_TOLERANCE &&
+                           g < this.MARKER_TOLERANCE &&
+                           b < this.MARKER_TOLERANCE);
+            const isWhite = (r > 255 - this.MARKER_TOLERANCE &&
+                           g > 255 - this.MARKER_TOLERANCE &&
+                           b > 255 - this.MARKER_TOLERANCE);
+
+            // 패턴 검증
+            if (sample.expectBlack && !isBlack) {
+                return false;  // 검정이어야 하는데 아님
+            }
+            if (!sample.expectBlack && !isWhite) {
+                return false;  // 흰색이어야 하는데 아님
+            }
+        }
+
+        return true;  // 패턴 일치
     }
 
     /**

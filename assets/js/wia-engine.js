@@ -17,12 +17,9 @@ class WIANeuralEngine {
         this.NEURON_STROKE = '#ffffff';                       // 흰색 테두리
         this.CONNECTION_COLOR = 'rgba(118, 75, 162, 0.3)';   // 진한 보라 (백업 파일과 동일)
 
-        // 3개의 다른 마커 색상 (백업 파일의 정확한 사양)
-        this.MARKER_COLORS = {
-            top: 'rgb(255, 0, 110)',      // #ff006e 핑크
-            left: 'rgb(0, 180, 216)',     // #00b4d8 하늘색
-            right: 'rgb(114, 9, 183)'     // #7209b7 보라색
-        };
+        // QR 스타일 마커 (검정 사각형 - 특허 만료, 세계 표준)
+        this.MARKER_COLOR = 'rgb(0, 0, 0)';                  // 순수 검정
+        this.MARKER_SIZE = 60;                                // 큰 사각형 60x60px
 
         // 고해상도 설정
         const dpr = window.devicePixelRatio || 1;
@@ -121,64 +118,55 @@ class WIANeuralEngine {
     }
 
     /**
-     * 마커 렌더링 - 3개 위치 (백업 파일의 정확한 사양)
+     * 마커 렌더링 - QR 스타일 (3개 사각형 - 검정-흰색-검정 패턴)
      */
     renderMarkers(width, height) {
         const ctx = this.ctx;
-        const size = 40; // 마커 크기 (너비 100px, 높이 80px 삼각형 기준)
+        const size = this.MARKER_SIZE;
 
-        // 3개 마커 위치 (백업 파일과 동일)
-        const markers = [
-            {
-                name: 'top',
-                x: width / 2,           // 가로 중앙
-                y: 30,                  // 상단에서 30px
-                color: this.MARKER_COLORS.top,
-                direction: 'up'         // 위쪽을 가리킴
-            },
-            {
-                name: 'left',
-                x: 30,                  // 좌측에서 30px
-                y: height - 30,         // 하단에서 30px
-                color: this.MARKER_COLORS.left,
-                direction: 'down'       // 아래쪽을 가리킴
-            },
-            {
-                name: 'right',
-                x: width - 30,          // 우측에서 30px
-                y: height - 30,         // 하단에서 30px
-                color: this.MARKER_COLORS.right,
-                direction: 'down'       // 아래쪽을 가리킴
-            }
+        // 3개 마커 위치 (QR 코드와 동일 - 좌상, 우상, 좌하)
+        const positions = [
+            { x: 0, y: 0 },                    // 좌상단
+            { x: width - size, y: 0 },         // 우상단
+            { x: 0, y: height - size }         // 좌하단
         ];
 
-        markers.forEach((marker) => {
-            ctx.save();
-            ctx.translate(marker.x, marker.y);
-
-            // 마커 타입별 렌더링 (각 마커마다 다른 색상)
-            switch (this.markerType) {
-                case 'heart':
-                    this.drawHeart(size, marker.color);
-                    break;
-                case 'star':
-                    this.drawStar(size, marker.color);
-                    break;
-                case 'diamond':
-                    this.drawDiamond(size, marker.color);
-                    break;
-                case 'moon':
-                    this.drawMoon(size, marker.color);
-                    break;
-                case 'lightning':
-                    this.drawLightning(size, marker.color);
-                    break;
-                default:
-                    this.drawTriangle(size, marker.color, marker.direction);
-            }
-
-            ctx.restore();
+        positions.forEach(pos => {
+            this.drawQRMarker(pos.x, pos.y, size);
         });
+    }
+
+    /**
+     * QR 스타일 마커 그리기 (검정-흰색-검정 3층 사각형)
+     */
+    drawQRMarker(x, y, size) {
+        const ctx = this.ctx;
+
+        // 1. 외곽 검정 사각형 (7/7)
+        ctx.fillStyle = this.MARKER_COLOR;
+        ctx.fillRect(x, y, size, size);
+
+        // 2. 중간 흰색 사각형 (5/7)
+        const whiteSize = size * 5 / 7;
+        const whiteOffset = size * 1 / 7;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(
+            x + whiteOffset,
+            y + whiteOffset,
+            whiteSize,
+            whiteSize
+        );
+
+        // 3. 내부 검정 사각형 (3/7)
+        const innerSize = size * 3 / 7;
+        const innerOffset = size * 2 / 7;
+        ctx.fillStyle = this.MARKER_COLOR;
+        ctx.fillRect(
+            x + innerOffset,
+            y + innerOffset,
+            innerSize,
+            innerSize
+        );
     }
 
     // 마커 그리기 함수들 (각각 다른 색상 적용)
