@@ -12,8 +12,10 @@ class WIANeuralEngine {
         this.markerType = 'triangle';
         this.animationFrame = null;
 
-        // 표준화된 색상 (Decoder가 쉽게 감지 가능)
-        this.NEURON_COLOR = 'rgb(120, 120, 220)';  // 보라색 (명확한 중간값)
+        // 표준화된 색상 (백업 파일의 정확한 사양)
+        this.NEURON_COLOR = 'rgba(102, 126, 234, 0.8)';      // 청보라색 (백업 파일과 동일)
+        this.NEURON_STROKE = '#ffffff';                       // 흰색 테두리
+        this.CONNECTION_COLOR = 'rgba(118, 75, 162, 0.3)';   // 진한 보라 (백업 파일과 동일)
 
         // 3개의 다른 마커 색상 (백업 파일의 정확한 사양)
         this.MARKER_COLORS = {
@@ -298,7 +300,7 @@ class WIANeuralEngine {
     }
 
     /**
-     * 뉴런 렌더링 - 명확한 단색으로
+     * 뉴런 렌더링 - 백업 파일 사양대로
      */
     renderNeurons() {
         if (!this.pattern.neurons) return;
@@ -309,32 +311,25 @@ class WIANeuralEngine {
         this.pattern.neurons.forEach(neuron => {
             const x = neuron.x * scale;
             const y = neuron.y * scale;
-            const radius = 10 * scale; // 더 큰 뉴런
+            const radius = 8 * scale; // 백업 파일과 동일 (8px)
 
-            // 뉴런 원 - 단색 (그라디언트 제거)
+            // 뉴런 원 - 백업 파일과 동일한 색상
             ctx.beginPath();
             ctx.arc(x, y, radius, 0, Math.PI * 2);
 
-            // 명확한 단일 색상 (intensity 기반)
-            const alpha = 0.5 + (neuron.intensity * 0.5); // 0.5 ~ 1.0
-            ctx.fillStyle = this.NEURON_COLOR.replace(')', `, ${alpha})`).replace('rgb', 'rgba');
+            // 청보라색 rgba(102, 126, 234, 0.8)
+            ctx.fillStyle = this.NEURON_COLOR;
             ctx.fill();
 
-            // 흰색 외곽선
-            ctx.strokeStyle = '#ffffff';
-            ctx.lineWidth = 3 * scale;
+            // 흰색 테두리 2px (백업 파일과 동일)
+            ctx.strokeStyle = this.NEURON_STROKE;
+            ctx.lineWidth = 2 * scale;
             ctx.stroke();
-
-            // 내부 하이라이트 (입체감)
-            ctx.beginPath();
-            ctx.arc(x - radius * 0.25, y - radius * 0.25, radius * 0.4, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(255, 255, 255, ${neuron.intensity * 0.5})`;
-            ctx.fill();
         });
     }
 
     /**
-     * 연결선 렌더링 - 더 명확하게
+     * 연결선 렌더링 - 백업 파일 사양대로 (곡선)
      */
     renderConnections() {
         if (!this.pattern.connections) return;
@@ -351,13 +346,15 @@ class WIANeuralEngine {
             ctx.beginPath();
             ctx.moveTo(startX, startY);
 
-            // 직선 연결 (곡선보다 명확)
-            ctx.lineTo(endX, endY);
+            // 곡선 연결 (백업 파일과 동일 - quadraticCurveTo)
+            const cpX = (startX + endX) / 2;
+            const cpY = startY - 20 * scale;
+            ctx.quadraticCurveTo(cpX, cpY, endX, endY);
 
-            // 명확한 색상
-            const alpha = 0.3 + (conn.strength * 0.4); // 0.3 ~ 0.7
-            ctx.strokeStyle = `rgba(150, 100, 200, ${alpha})`;
-            ctx.lineWidth = 2.5 * scale;
+            // 진한 보라색 rgba(118, 75, 162, strength)
+            const strength = conn.strength || 0.3;
+            ctx.strokeStyle = `rgba(118, 75, 162, ${strength})`;
+            ctx.lineWidth = 2 * scale;
             ctx.stroke();
         });
     }
