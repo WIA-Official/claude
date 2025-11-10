@@ -2,13 +2,6 @@
  * ============================================================================
  * 🧠 WIA Neural Encoder - 30년 앞선 QR 코드 대체 시스템
  * ============================================================================
- *
- * 핵심 기능:
- * - 데이터를 뉴럴 패턴으로 인코딩
- * - 9KB까지 정확한 데이터 저장
- * - Reed-Solomon 오류 정정 적용
- * - 211개 언어 지원
- * - 14가지 데이터 타입 처리
  */
 
 class WIANeuralEncoder {
@@ -18,20 +11,13 @@ class WIANeuralEncoder {
         this.GRID_SIZE = 480;
         this.NEURON_COUNT = 144; // 12x12 뉴런 그리드
         this.ERROR_CORRECTION_LEVEL = 0.3; // 30% 오류 정정
-
-        console.log('🧠 WIA Neural Encoder 초기화 완료');
     }
 
     /**
      * 메인 인코딩 함수
-     * @param {string} dataType - 데이터 타입 (text, wifi, vcard 등)
-     * @param {object} data - 인코딩할 데이터
-     * @returns {object} - 뉴럴 패턴 객체
      */
     encode(dataType, data) {
         try {
-            console.log(`📝 인코딩 시작: ${dataType}`, data);
-
             // 1. 데이터 타입별 포맷팅
             const formattedData = this.formatDataByType(dataType, data);
 
@@ -53,13 +39,13 @@ class WIANeuralEncoder {
             neuralPattern.metadata = {
                 version: this.VERSION,
                 dataType: dataType,
+                originalData: formattedData, // 디버깅용
                 timestamp: Date.now(),
                 dataSize: bytes.length,
                 encodedSize: encodedBytes.length,
                 neuronCount: this.NEURON_COUNT
             };
 
-            console.log('✅ 인코딩 완료:', neuralPattern);
             return neuralPattern;
 
         } catch (error) {
@@ -74,11 +60,11 @@ class WIANeuralEncoder {
     formatDataByType(type, data) {
         switch (type) {
             case 'text':
-                return data.content || data.여기에 || data.field_0 || '';
+                return data.content || data.text || '';
 
             case 'link':
             case 'url':
-                return data.url || data.https || data.field_0 || '';
+                return data.url || data.link || '';
 
             case 'wifi':
                 return this.formatWiFi(data);
@@ -91,7 +77,7 @@ class WIANeuralEncoder {
                 return this.formatEmail(data);
 
             case 'phone':
-                return `tel:${data.phone || data.field_0 || ''}`;
+                return `tel:${data.phone || ''}`;
 
             case 'sms':
             case 'smsonly':
@@ -110,8 +96,11 @@ class WIANeuralEncoder {
             case 'gps':
                 return this.formatGPS(data);
 
-            case 'human':
-                return this.formatHumanProof(data);
+            case 'application':
+                return this.formatApplication(data);
+
+            case 'file':
+                return this.formatFile(data);
 
             default:
                 return JSON.stringify(data);
@@ -120,110 +109,96 @@ class WIANeuralEncoder {
 
     // WiFi 포맷 (MECARD 형식)
     formatWiFi(data) {
-        const ssid = data.ssid || data.mywifi || data.field_0 || '';
-        const password = data.password || data.wifi || data.field_1 || '';
-        const security = data.security || data.field_2 || 'WPA';
-
+        const ssid = data.ssid || '';
+        const password = data.password || '';
+        const security = data.security || 'WPA';
         return `WIFI:T:${security};S:${ssid};P:${password};;`;
     }
 
     // vCard 포맷
     formatVCard(data) {
-        const firstName = data.firstName || data.홍길동 || data.field_0 || '';
-        const lastName = data.lastName || data.홍 || data.field_1 || '';
-        const org = data.organization || data.wia || data.field_2 || '';
-        const tel = data.phone || data.field_3 || '';
-        const email = data.email || data.field_4 || '';
-        const website = data.website || data.field_5 || '';
+        const name = data.name || '';
+        const phone = data.phone || '';
+        const email = data.email || '';
+        const org = data.org || '';
+        const title = data.title || '';
 
         return `BEGIN:VCARD
 VERSION:3.0
-FN:${firstName} ${lastName}
-N:${lastName};${firstName};;;
-ORG:${org}
-TEL:${tel}
+FN:${name}
+TEL:${phone}
 EMAIL:${email}
-URL:${website}
+ORG:${org}
+TITLE:${title}
 END:VCARD`;
     }
 
     // Email 포맷
     formatEmail(data) {
-        const email = data.email || data.someone || data.field_0 || '';
-        const subject = data.subject || data.이메일 || data.field_1 || '';
-        const body = data.body || data.field_2 || '';
-
-        return `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        const to = data.to || data.email || '';
+        const subject = data.subject || '';
+        const body = data.body || '';
+        return `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     }
 
     // SMS 포맷
     formatSMS(data) {
-        const phone = data.phone || data.field_0 || '';
-        const message = data.message || data.sms || data.field_1 || '';
-
+        const phone = data.phone || '';
+        const message = data.message || '';
         return `sms:${phone}?body=${encodeURIComponent(message)}`;
     }
 
     // Event 포맷 (iCalendar)
     formatEvent(data) {
-        const title = data.title || data.회의 || data.field_0 || '';
-        const description = data.description || data.field_1 || '';
-        const location = data.location || data.field_2 || '';
-        const startTime = data.startTime || data.field_3 || '';
-        const endTime = data.endTime || data.field_4 || '';
+        const title = data.title || '';
+        const start = data.start || '';
+        const end = data.end || '';
+        const location = data.location || '';
 
         return `BEGIN:VEVENT
 SUMMARY:${title}
-DESCRIPTION:${description}
+DTSTART:${start}
+DTEND:${end}
 LOCATION:${location}
-DTSTART:${startTime}
-DTEND:${endTime}
 END:VEVENT`;
     }
 
     // WhatsApp 포맷
     formatWhatsApp(data) {
-        const phone = data.phone || data.field_0 || '';
-        const message = data.message || data.whatsapp || data.field_1 || '';
+        const phone = data.phone || '';
+        const message = data.message || '';
         const cleanPhone = phone.replace(/[^0-9]/g, '');
-
         return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
     }
 
     // Crypto 포맷
     formatCrypto(data) {
-        const coin = data.coin || data.field_0 || 'bitcoin';
-        const address = data.address || data.지갑 || data.field_1 || '';
-        const amount = data.amount || data.field_2 || '';
-
-        return amount ? `${coin}:${address}?amount=${amount}` : `${coin}:${address}`;
+        const type = data.type || 'bitcoin';
+        const address = data.address || '';
+        const amount = data.amount || '';
+        return amount ? `${type}:${address}?amount=${amount}` : `${type}:${address}`;
     }
 
     // GPS/WIA PIN 포맷
     formatGPS(data) {
-        const lat = data.latitude || data.lat || 0;
-        const lon = data.longitude || data.lon || 0;
-        const pinCode = this.encodeYUJIN(lat, lon);
-
-        return `geo:${lat},${lon}?pincode=${pinCode}`;
+        const lat = data.lat || 0;
+        const lng = data.lng || 0;
+        const name = data.name || '';
+        return `geo:${lat},${lng}${name ? '?name=' + encodeURIComponent(name) : ''}`;
     }
 
-    // YUJIN 알고리즘 (WIA PIN Code)
-    encodeYUJIN(lat, lon) {
-        // 간단한 geohash 스타일 인코딩
-        const latBase = Math.floor((lat + 90) * 100000);
-        const lonBase = Math.floor((lon + 180) * 100000);
-
-        return `WIA-${latBase.toString(36)}-${lonBase.toString(36)}`.toUpperCase();
+    // Application 포맷
+    formatApplication(data) {
+        const store = data.store || 'googleplay';
+        const id = data.id || '';
+        return store === 'appstore' ? `https://apps.apple.com/app/${id}` : `https://play.google.com/store/apps/details?id=${id}`;
     }
 
-    // Human Proof 포맷
-    formatHumanProof(data) {
-        const challenge = data.challenge || 'Prove you are human';
-        const timestamp = data.timestamp || Date.now();
-        const randomSeed = Math.random().toString(36).substring(2, 15);
-
-        return `HUMAN:${challenge}:${timestamp}:${randomSeed}`;
+    // File 포맷
+    formatFile(data) {
+        const url = data.url || '';
+        const name = data.name || '';
+        return `${url}${name ? '#' + name : ''}`;
     }
 
     /**
@@ -241,7 +216,7 @@ END:VEVENT`;
         const eccLength = Math.ceil(bytes.length * this.ERROR_CORRECTION_LEVEL);
         const eccBytes = [];
 
-        // 간단한 체크섬 기반 ECC (실제로는 Reed-Solomon 사용)
+        // 간단한 체크섬 기반 ECC
         for (let i = 0; i < eccLength; i++) {
             let checksum = 0;
             for (let j = 0; j < bytes.length; j++) {
@@ -260,7 +235,7 @@ END:VEVENT`;
         const pattern = {
             neurons: [],
             connections: [],
-            data: bytes
+            rawData: bytes // 원본 바이트 데이터 저장
         };
 
         // 1. 뉴런 배치 (12x12 그리드)
@@ -278,18 +253,22 @@ END:VEVENT`;
                     x: (j + 1) * spacing,
                     y: (i + 1) * spacing,
                     value: byteValue,
-                    intensity: byteValue / 255
+                    intensity: byteValue / 255,
+                    gridX: j,
+                    gridY: i
                 });
             }
         }
 
         // 2. 연결선 생성 (데이터 인코딩)
-        for (let i = 0; i < bytes.length - 1; i++) {
-            const startNeuron = pattern.neurons[i % this.NEURON_COUNT];
-            const endNeuron = pattern.neurons[(i + 1) % this.NEURON_COUNT];
+        for (let i = 0; i < Math.min(bytes.length - 1, this.NEURON_COUNT - 1); i++) {
+            const startNeuron = pattern.neurons[i];
+            const endNeuron = pattern.neurons[i + 1];
 
             if (startNeuron && endNeuron) {
                 pattern.connections.push({
+                    startId: startNeuron.id,
+                    endId: endNeuron.id,
                     start: { x: startNeuron.x, y: startNeuron.y },
                     end: { x: endNeuron.x, y: endNeuron.y },
                     strength: (bytes[i] + bytes[i + 1]) / 510,
@@ -300,40 +279,11 @@ END:VEVENT`;
 
         return pattern;
     }
-
-    /**
-     * Human-only 패턴 생성 (로봇이 읽을 수 없는 패턴)
-     */
-    generateHumanPattern(basePattern) {
-        return {
-            ...basePattern,
-            humanOnly: {
-                // 미세 떨림 (로봇이 감지 못함)
-                microVibration: Array(100).fill(0).map(() => ({
-                    x: Math.random() * 0.5 - 0.25,
-                    y: Math.random() * 0.5 - 0.25,
-                    timestamp: Date.now() + Math.random() * 100
-                })),
-
-                // 감정 기반 그라디언트 (인간만 인식)
-                emotionalGradient: {
-                    joy: `rgba(255, 215, 0, ${0.1 + Math.random() * 0.1})`,
-                    trust: `rgba(135, 206, 250, ${0.1 + Math.random() * 0.1})`,
-                    anticipation: `rgba(255, 165, 0, ${0.1 + Math.random() * 0.1})`
-                },
-
-                // 생체 리듬 패턴
-                biorhythm: Math.sin(Date.now() / 1000) * 0.1
-            }
-        };
-    }
 }
 
-// Export for browser
+// Export
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = WIANeuralEncoder;
 } else {
     window.WIANeuralEncoder = WIANeuralEncoder;
 }
-
-console.log('✅ WIA Neural Encoder 로드 완료');

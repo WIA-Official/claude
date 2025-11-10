@@ -17,7 +17,12 @@ class WIANeuralDecoder {
         this.NEURON_COUNT = 144;
         this.ERROR_THRESHOLD = 0.1; // 10% 오류 허용
 
-        console.log('🔍 WIA Neural Decoder 초기화 완료');
+        // 표준화된 색상 범위 (Engine과 동일)
+        this.NEURON_COLOR = { r: 120, g: 120, b: 220 };
+        this.MARKER_COLOR = { r: 220, g: 60, b: 100 };
+
+        // 색상 허용 범위 (±20)
+        this.COLOR_TOLERANCE = 20;
     }
 
     /**
@@ -27,34 +32,47 @@ class WIANeuralDecoder {
      */
     async decode(source) {
         try {
-            console.log('📖 디코딩 시작...');
-
             // 1. 이미지 데이터 추출
             const imageData = this.extractImageData(source);
 
-            // 2. 뉴런 위치 감지
+            // 2. 마커 감지 (방향 및 유효성 확인)
+            const markers = this.detectMarkers(imageData);
+            if (markers.length < 3) {
+                const debugInfo = this.sampleColorsAtPositions(imageData, [
+                    { x: 60, y: 60 },
+                    { x: imageData.width - 60, y: 60 },
+                    { x: 60, y: imageData.height - 60 }
+                ]);
+                throw new Error(`마커를 감지할 수 없습니다 (${markers.length}/3). 샘플 색상: ${JSON.stringify(debugInfo)}`);
+            }
+
+            // 3. 뉴런 위치 감지
             const neurons = this.detectNeurons(imageData);
 
             if (neurons.length === 0) {
-                throw new Error('뉴런을 감지할 수 없습니다. WIA Neural Code가 아니거나 손상되었습니다.');
+                const debugInfo = this.sampleColorsAtGrid(imageData);
+                throw new Error(`뉴런을 감지할 수 없습니다. 샘플 색상: ${JSON.stringify(debugInfo)}`);
             }
 
-            // 3. 연결선 추적
+            // 4. 연결선 추적
             const connections = this.traceConnections(imageData, neurons);
 
-            // 4. 바이트 데이터 복원
+            // 5. 바이트 데이터 복원
             const bytes = this.reconstructBytes(neurons, connections);
 
-            // 5. 오류 정정 적용
+            // 6. 오류 정정 적용
             const correctedBytes = this.applyErrorCorrection(bytes);
 
-            // 6. 바이트를 문자열로 변환
+            // 7. 바이트를 문자열로 변환
             const decodedString = this.bytesToString(correctedBytes);
 
-            // 7. 데이터 타입 파싱
+            // 8. 데이터 타입 파싱
             const result = this.parseDecodedData(decodedString);
 
-            console.log('✅ 디코딩 완료:', result);
+            result.success = true;
+            result.neuronCount = neurons.length;
+            result.connectionCount = connections.length;
+
             return result;
 
         } catch (error) {
@@ -83,6 +101,115 @@ class WIANeuralDecoder {
         }
 
         return ctx.getImageData(0, 0, canvas.width, canvas.height);
+    }
+
+    /**
+     * 마커 감지 (3개 위치 확인)
+     */
+    detectMarkers(imageData) {
+        const { width, height, data } = imageData;
+        const markers = [];
+
+        // 예상 마커 위치 (Engine과 동일)
+        const expectedPositions = [
+            { x: 60, y: 60, name: 'top-left' },
+            { x: width - 60, y: 60, name: 'top-right' },
+            { x: 60, y: height - 60, name: 'bottom-left' }
+        ];
+
+        expectedPositions.forEach(pos => {
+            // 반경 30px 내에서 마커 색상 검색
+            if (this.findMarkerAt(data, width, height, pos.x, pos.y, 30)) {
+                markers.push({ x: pos.x, y: pos.y, name: pos.name });
+            }
+        });
+
+        return markers;
+    }
+
+    /**
+     * 특정 위치에서 마커 색상 찾기
+     */
+    findMarkerAt(data, width, height, centerX, centerY, radius) {
+        let markerPixelCount = 0;
+        let totalPixels = 0;
+
+        for (let dy = -radius; dy <= radius; dy++) {
+            for (let dx = -radius; dx <= radius; dx++) {
+                const x = centerX + dx;
+                const y = centerY + dy;
+
+                if (x < 0 || x >= width || y < 0 || y >= height) continue;
+
+                totalPixels++;
+                const idx = (y * width + x) * 4;
+                const r = data[idx];
+                const g = data[idx + 1];
+                const b = data[idx + 2];
+
+                // 마커 색상 감지: rgb(220, 60, 100) ± 20
+                const isMarkerColor =
+                    Math.abs(r - this.MARKER_COLOR.r) < this.COLOR_TOLERANCE &&
+                    Math.abs(g - this.MARKER_COLOR.g) < this.COLOR_TOLERANCE &&
+                    Math.abs(b - this.MARKER_COLOR.b) < this.COLOR_TOLERANCE;
+
+                if (isMarkerColor) {
+                    markerPixelCount++;
+                }
+            }
+        }
+
+        // 20% 이상이 마커 색상이면 마커로 인식
+        return (markerPixelCount / totalPixels) > 0.2;
+    }
+
+    /**
+     * 디버깅: 특정 위치들의 색상 샘플링
+     */
+    sampleColorsAtPositions(imageData, positions) {
+        const { width, data } = imageData;
+        const samples = [];
+
+        positions.forEach(pos => {
+            const idx = (pos.y * width + pos.x) * 4;
+            samples.push({
+                x: pos.x,
+                y: pos.y,
+                r: data[idx],
+                g: data[idx + 1],
+                b: data[idx + 2]
+            });
+        });
+
+        return samples;
+    }
+
+    /**
+     * 디버깅: 그리드 위치의 색상 샘플링
+     */
+    sampleColorsAtGrid(imageData) {
+        const { width, data } = imageData;
+        const gridSize = Math.sqrt(this.NEURON_COUNT);
+        const spacing = width / (gridSize + 1);
+        const samples = [];
+
+        // 첫 4개 뉴런 위치만 샘플링
+        for (let i = 0; i < 2; i++) {
+            for (let j = 0; j < 2; j++) {
+                const x = Math.round((j + 1) * spacing);
+                const y = Math.round((i + 1) * spacing);
+                const idx = (y * width + x) * 4;
+                samples.push({
+                    gridPos: `${i},${j}`,
+                    x, y,
+                    r: data[idx],
+                    g: data[idx + 1],
+                    b: data[idx + 2]
+                });
+            }
+        }
+
+        return samples;
     }
 
     /**
@@ -122,7 +249,6 @@ class WIANeuralDecoder {
             }
         }
 
-        console.log(`🔍 ${neurons.length}개 뉴런 감지됨`);
         return neurons;
     }
 
@@ -133,6 +259,7 @@ class WIANeuralDecoder {
         let maxIntensity = 0;
         let neuronX = centerX;
         let neuronY = centerY;
+        let foundCount = 0;
 
         for (let dy = -radius; dy <= radius; dy++) {
             for (let dx = -radius; dx <= radius; dx++) {
@@ -146,14 +273,19 @@ class WIANeuralDecoder {
                 const g = data[idx + 1];
                 const b = data[idx + 2];
 
-                // WIA 보라색 계열 감지 (102, 126, 234)
-                const isWIAColor =
-                    r > 80 && r < 150 &&
-                    g > 100 && g < 150 &&
-                    b > 200 && b < 250;
+                // 뉴런 색상 감지: rgb(120, 120, 220) ± 20
+                // 또는 레거시 그라디언트 색상도 지원
+                const isNeuronColor =
+                    (Math.abs(r - this.NEURON_COLOR.r) < this.COLOR_TOLERANCE &&
+                     Math.abs(g - this.NEURON_COLOR.g) < this.COLOR_TOLERANCE &&
+                     Math.abs(b - this.NEURON_COLOR.b) < this.COLOR_TOLERANCE) ||
+                    // 레거시 그라디언트 범위
+                    (r >= 90 && r <= 140 && g >= 70 && g <= 140 && b >= 150 && b <= 250);
 
-                if (isWIAColor) {
-                    const intensity = (r + g + b) / 3 / 255;
+                if (isNeuronColor) {
+                    foundCount++;
+                    // Intensity는 blue channel 기준 (뉴런의 주요 색상)
+                    const intensity = b / 255;
                     if (intensity > maxIntensity) {
                         maxIntensity = intensity;
                         neuronX = x;
@@ -163,7 +295,8 @@ class WIANeuralDecoder {
             }
         }
 
-        return maxIntensity > 0.3 ? { x: neuronX, y: neuronY, intensity: maxIntensity } : null;
+        // 충분한 픽셀을 찾았고, intensity가 유의미하면 뉴런으로 인식
+        return (foundCount > 5 && maxIntensity > 0.5) ? { x: neuronX, y: neuronY, intensity: maxIntensity } : null;
     }
 
     /**
@@ -190,7 +323,6 @@ class WIANeuralDecoder {
             }
         }
 
-        console.log(`🔗 ${connections.length}개 연결선 감지됨`);
         return connections;
     }
 
@@ -216,11 +348,12 @@ class WIANeuralDecoder {
             const g = data[idx + 1];
             const b = data[idx + 2];
 
-            // WIA 보라색 연결선 감지
+            // 연결선 색상 감지: rgba(150, 100, 200, 0.3-0.7)
+            // 배경(흰색)과 블렌딩된 색상 범위
             const isConnection =
-                r > 100 && r < 140 &&
-                g > 60 && g < 100 &&
-                b > 150 && b < 180;
+                (r >= 140 && r <= 200 && g >= 90 && g <= 160 && b >= 190 && b <= 240) ||
+                // 또는 뉴런 색상과 유사한 보라색 계열
+                (r >= 100 && r <= 160 && g >= 80 && g <= 140 && b >= 180 && b <= 240);
 
             if (isConnection) {
                 totalIntensity += (r + g + b) / 3 / 255;
@@ -230,7 +363,7 @@ class WIANeuralDecoder {
 
         const avgStrength = sampleCount > 0 ? totalIntensity / sampleCount : 0;
 
-        return avgStrength > 0.1 ? { strength: avgStrength } : null;
+        return avgStrength > 0.05 ? { strength: avgStrength } : null;
     }
 
     /**
@@ -251,7 +384,6 @@ class WIANeuralDecoder {
             bytes.push(byteValue);
         }
 
-        console.log(`📦 ${bytes.length} 바이트 복원됨`);
         return bytes;
     }
 
@@ -267,7 +399,7 @@ class WIANeuralDecoder {
         const eccBytes = bytes.slice(dataLength);
 
         // 간단한 체크섬 검증
-        let isValid = true;
+        let errorCount = 0;
         for (let i = 0; i < eccLength; i++) {
             let checksum = 0;
             for (let j = 0; j < dataBytes.length; j++) {
@@ -276,13 +408,12 @@ class WIANeuralDecoder {
             const expectedECC = checksum % 256;
 
             if (Math.abs(eccBytes[i] - expectedECC) > 10) {
-                isValid = false;
-                console.warn(`⚠️ ECC 불일치 감지 at ${i}: ${eccBytes[i]} vs ${expectedECC}`);
+                errorCount++;
             }
         }
 
-        if (!isValid) {
-            console.warn('⚠️ 오류 정정 중 일부 데이터 손상 감지됨');
+        if (errorCount > eccLength * 0.5) {
+            throw new Error(`ECC 검증 실패: ${errorCount}/${eccLength} 오류 감지`);
         }
 
         return dataBytes;
@@ -472,5 +603,3 @@ if (typeof module !== 'undefined' && module.exports) {
 } else {
     window.WIANeuralDecoder = WIANeuralDecoder;
 }
-
-console.log('✅ WIA Neural Decoder 로드 완료');

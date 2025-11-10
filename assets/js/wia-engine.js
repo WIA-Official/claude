@@ -2,12 +2,6 @@
  * ============================================================================
  * 🎨 WIA Neural Engine - Canvas 렌더링 엔진
  * ============================================================================
- *
- * 핵심 기능:
- * - 뉴럴 패턴을 Canvas에 시각화
- * - 마커 시스템 (삼각형, 하트, 별 등)
- * - 애니메이션 효과
- * - 고해상도 렌더링
  */
 
 class WIANeuralEngine {
@@ -17,6 +11,10 @@ class WIANeuralEngine {
         this.pattern = null;
         this.markerType = 'triangle';
         this.animationFrame = null;
+
+        // 표준화된 색상 (Decoder가 쉽게 감지 가능)
+        this.NEURON_COLOR = 'rgb(120, 120, 220)';  // 보라색 (명확한 중간값)
+        this.MARKER_COLOR = 'rgb(220, 60, 100)';    // 빨강-분홍 (마커 구별)
 
         // 고해상도 설정
         const dpr = window.devicePixelRatio || 1;
@@ -28,20 +26,13 @@ class WIANeuralEngine {
         this.ctx.scale(dpr, dpr);
         this.ctx.imageSmoothingEnabled = true;
         this.ctx.imageSmoothingQuality = 'high';
-
-        console.log('🎨 WIA Neural Engine 초기화 완료');
     }
 
     /**
      * WIA Neural Code 생성 및 렌더링
-     * @param {string} data - 인코딩할 데이터
-     * @param {string} markerType - 마커 타입
-     * @param {string} quality - 품질 (low, medium, high)
      */
     generate(data, markerType = 'triangle', quality = 'high') {
         try {
-            console.log('🎨 렌더링 시작:', { data, markerType, quality });
-
             // 1. 인코더로 뉴럴 패턴 생성
             const encoder = new WIANeuralEncoder();
 
@@ -55,7 +46,6 @@ class WIANeuralEngine {
             // 2. Canvas 렌더링
             this.render();
 
-            console.log('✅ 렌더링 완료');
             return this.pattern;
 
         } catch (error) {
@@ -103,71 +93,62 @@ class WIANeuralEngine {
         const { width, height } = this.canvas.getBoundingClientRect();
         const ctx = this.ctx;
 
-        // 1. 배경 그리기
+        // 1. 배경 그리기 (순백색)
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, width, height);
 
-        // 2. 그라디언트 배경 (선택사항)
-        const bgGradient = ctx.createRadialGradient(
-            width / 2, height / 2, 0,
-            width / 2, height / 2, width / 2
-        );
-        bgGradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
-        bgGradient.addColorStop(1, 'rgba(248, 249, 250, 1)');
-        ctx.fillStyle = bgGradient;
-        ctx.fillRect(0, 0, width, height);
-
-        // 3. 마커 그리기 (먼저 그려서 뒤에 배치)
+        // 2. 마커 그리기 (가장 먼저 - 뒤에 배치)
         this.renderMarkers(width, height);
 
-        // 4. 연결선 그리기
+        // 3. 연결선 그리기
         this.renderConnections();
 
-        // 5. 뉴런 그리기
+        // 4. 뉴런 그리기 (가장 나중 - 앞에 배치)
         this.renderNeurons();
 
-        // 6. 메타데이터 표시 (디버그용)
+        // 5. 메타데이터 표시 (선택사항)
         if (this.pattern.metadata) {
             this.renderMetadata(width, height);
         }
     }
 
     /**
-     * 마커 렌더링
+     * 마커 렌더링 - 3개 위치
      */
     renderMarkers(width, height) {
         const ctx = this.ctx;
-        const size = 30;
+        const size = 25; // 마커 크기
 
-        // 3개 마커 위치
+        // 3개 마커 위치 (고정된 위치)
         const markers = [
-            { x: width / 2, y: 50 },          // 상단 중앙
-            { x: 100, y: height - 50 },       // 하단 왼쪽
-            { x: width - 100, y: height - 50 } // 하단 오른쪽
+            { x: 60, y: 60 },                    // 좌상단
+            { x: width - 60, y: 60 },            // 우상단
+            { x: 60, y: height - 60 }            // 좌하단
         ];
 
         markers.forEach((pos, index) => {
             ctx.save();
             ctx.translate(pos.x, pos.y);
 
+            // 마커 타입별 렌더링
             switch (this.markerType) {
                 case 'heart':
-                    this.drawHeart(size, index);
+                    this.drawHeart(size);
                     break;
                 case 'star':
-                    this.drawStar(size, index);
+                    this.drawStar(size);
                     break;
                 case 'diamond':
-                    this.drawDiamond(size, index);
+                    this.drawDiamond(size);
                     break;
                 case 'moon':
-                    this.drawMoon(size, index);
+                    this.drawMoon(size);
                     break;
                 case 'lightning':
-                    this.drawLightning(size, index);
+                    this.drawLightning(size);
                     break;
                 default:
-                    this.drawTriangle(size, index);
+                    this.drawTriangle(size);
             }
 
             ctx.restore();
@@ -175,83 +156,60 @@ class WIANeuralEngine {
     }
 
     // 마커 그리기 함수들
-    drawTriangle(size, index) {
-        const colors = ['#667eea', '#764ba2', '#4caf50'];
+    drawTriangle(size) {
         const ctx = this.ctx;
-
         ctx.beginPath();
         ctx.moveTo(0, -size);
         ctx.lineTo(-size * 0.866, size * 0.5);
         ctx.lineTo(size * 0.866, size * 0.5);
         ctx.closePath();
 
-        ctx.fillStyle = colors[index % 3];
+        ctx.fillStyle = this.MARKER_COLOR;
         ctx.fill();
 
         ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 3;
+        ctx.lineWidth = 4;
         ctx.stroke();
     }
 
-    drawHeart(size, index) {
-        const colors = ['#ff6b6b', '#ee5a24', '#ff9ff3'];
+    drawHeart(size) {
         const ctx = this.ctx;
-
         ctx.beginPath();
         ctx.moveTo(0, size * 0.3);
 
-        // 왼쪽 곡선
-        ctx.bezierCurveTo(
-            -size, -size * 0.3,
-            -size * 0.5, -size * 0.8,
-            0, -size * 0.3
-        );
+        ctx.bezierCurveTo(-size, -size * 0.3, -size * 0.5, -size * 0.8, 0, -size * 0.3);
+        ctx.bezierCurveTo(size * 0.5, -size * 0.8, size, -size * 0.3, 0, size * 0.3);
 
-        // 오른쪽 곡선
-        ctx.bezierCurveTo(
-            size * 0.5, -size * 0.8,
-            size, -size * 0.3,
-            0, size * 0.3
-        );
-
-        ctx.fillStyle = colors[index % 3];
+        ctx.fillStyle = this.MARKER_COLOR;
         ctx.fill();
 
         ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 3;
+        ctx.lineWidth = 4;
         ctx.stroke();
     }
 
-    drawStar(size, index) {
-        const colors = ['#ffd700', '#ffa500', '#ffff00'];
+    drawStar(size) {
         const ctx = this.ctx;
-
         ctx.beginPath();
         for (let i = 0; i < 5; i++) {
             const angle = (i * 4 * Math.PI) / 5 - Math.PI / 2;
             const x = Math.cos(angle) * size;
             const y = Math.sin(angle) * size;
-
-            if (i === 0) {
-                ctx.moveTo(x, y);
-            } else {
-                ctx.lineTo(x, y);
-            }
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
         }
         ctx.closePath();
 
-        ctx.fillStyle = colors[index % 3];
+        ctx.fillStyle = this.MARKER_COLOR;
         ctx.fill();
 
         ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 3;
+        ctx.lineWidth = 4;
         ctx.stroke();
     }
 
-    drawDiamond(size, index) {
-        const colors = ['#e74c3c', '#c0392b', '#f39c12'];
+    drawDiamond(size) {
         const ctx = this.ctx;
-
         ctx.beginPath();
         ctx.moveTo(0, -size);
         ctx.lineTo(size, 0);
@@ -259,38 +217,33 @@ class WIANeuralEngine {
         ctx.lineTo(-size, 0);
         ctx.closePath();
 
-        ctx.fillStyle = colors[index % 3];
+        ctx.fillStyle = this.MARKER_COLOR;
         ctx.fill();
 
         ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 3;
+        ctx.lineWidth = 4;
         ctx.stroke();
     }
 
-    drawMoon(size, index) {
-        const colors = ['#f1c40f', '#f39c12', '#e67e22'];
+    drawMoon(size) {
         const ctx = this.ctx;
-
         ctx.beginPath();
         ctx.arc(0, 0, size, 0, Math.PI * 2);
-        ctx.fillStyle = colors[index % 3];
+        ctx.fillStyle = this.MARKER_COLOR;
         ctx.fill();
 
-        // 그림자 효과
         ctx.beginPath();
         ctx.arc(size * 0.3, -size * 0.3, size * 0.8, 0, Math.PI * 2);
         ctx.fillStyle = '#ffffff';
         ctx.fill();
 
         ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 3;
+        ctx.lineWidth = 4;
         ctx.stroke();
     }
 
-    drawLightning(size, index) {
-        const colors = ['#f39c12', '#e67e22', '#d35400'];
+    drawLightning(size) {
         const ctx = this.ctx;
-
         ctx.beginPath();
         ctx.moveTo(-size * 0.3, -size);
         ctx.lineTo(size * 0.3, -size * 0.2);
@@ -300,16 +253,16 @@ class WIANeuralEngine {
         ctx.lineTo(size * 0.1, size * 0.2);
         ctx.closePath();
 
-        ctx.fillStyle = colors[index % 3];
+        ctx.fillStyle = this.MARKER_COLOR;
         ctx.fill();
 
         ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 3;
+        ctx.lineWidth = 4;
         ctx.stroke();
     }
 
     /**
-     * 뉴런 렌더링
+     * 뉴런 렌더링 - 명확한 단색으로
      */
     renderNeurons() {
         if (!this.pattern.neurons) return;
@@ -320,35 +273,32 @@ class WIANeuralEngine {
         this.pattern.neurons.forEach(neuron => {
             const x = neuron.x * scale;
             const y = neuron.y * scale;
-            const radius = 8 * scale;
+            const radius = 10 * scale; // 더 큰 뉴런
 
-            // 뉴런 원
+            // 뉴런 원 - 단색 (그라디언트 제거)
             ctx.beginPath();
             ctx.arc(x, y, radius, 0, Math.PI * 2);
 
-            // 그라디언트
-            const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
-            gradient.addColorStop(0, `rgba(102, 126, 234, ${neuron.intensity})`);
-            gradient.addColorStop(1, `rgba(118, 75, 162, ${neuron.intensity * 0.7})`);
-
-            ctx.fillStyle = gradient;
+            // 명확한 단일 색상 (intensity 기반)
+            const alpha = 0.5 + (neuron.intensity * 0.5); // 0.5 ~ 1.0
+            ctx.fillStyle = this.NEURON_COLOR.replace(')', `, ${alpha})`).replace('rgb', 'rgba');
             ctx.fill();
 
-            // 외곽선
+            // 흰색 외곽선
             ctx.strokeStyle = '#ffffff';
-            ctx.lineWidth = 2 * scale;
+            ctx.lineWidth = 3 * scale;
             ctx.stroke();
 
-            // 내부 하이라이트
+            // 내부 하이라이트 (입체감)
             ctx.beginPath();
-            ctx.arc(x - radius * 0.3, y - radius * 0.3, radius * 0.3, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(255, 255, 255, ${neuron.intensity * 0.4})`;
+            ctx.arc(x - radius * 0.25, y - radius * 0.25, radius * 0.4, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(255, 255, 255, ${neuron.intensity * 0.5})`;
             ctx.fill();
         });
     }
 
     /**
-     * 연결선 렌더링
+     * 연결선 렌더링 - 더 명확하게
      */
     renderConnections() {
         if (!this.pattern.connections) return;
@@ -365,27 +315,19 @@ class WIANeuralEngine {
             ctx.beginPath();
             ctx.moveTo(startX, startY);
 
-            // 곡선 연결 (베지어 곡선)
-            const cp1x = (startX + endX) / 2;
-            const cp1y = startY - 20 * scale;
-            const cp2x = (startX + endX) / 2;
-            const cp2y = endY - 20 * scale;
+            // 직선 연결 (곡선보다 명확)
+            ctx.lineTo(endX, endY);
 
-            ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, endX, endY);
-
-            // 그라디언트 선
-            const gradient = ctx.createLinearGradient(startX, startY, endX, endY);
-            gradient.addColorStop(0, `rgba(118, 75, 162, ${conn.strength * 0.6})`);
-            gradient.addColorStop(1, `rgba(102, 126, 234, ${conn.strength * 0.3})`);
-
-            ctx.strokeStyle = gradient;
-            ctx.lineWidth = 2 * scale;
+            // 명확한 색상
+            const alpha = 0.3 + (conn.strength * 0.4); // 0.3 ~ 0.7
+            ctx.strokeStyle = `rgba(150, 100, 200, ${alpha})`;
+            ctx.lineWidth = 2.5 * scale;
             ctx.stroke();
         });
     }
 
     /**
-     * 메타데이터 렌더링 (디버그용)
+     * 메타데이터 렌더링
      */
     renderMetadata(width, height) {
         const ctx = this.ctx;
@@ -451,11 +393,9 @@ class WIANeuralEngine {
     }
 }
 
-// Export for browser
+// Export
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = WIANeuralEngine;
 } else {
     window.WIANeuralEngine = WIANeuralEngine;
 }
-
-console.log('✅ WIA Neural Engine 로드 완료');
