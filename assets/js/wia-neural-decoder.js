@@ -19,10 +19,17 @@ class WIANeuralDecoder {
 
         // 표준화된 색상 범위 (Engine과 동일)
         this.NEURON_COLOR = { r: 120, g: 120, b: 220 };
-        this.MARKER_COLOR = { r: 220, g: 60, b: 100 };
 
-        // 색상 허용 범위 (±20)
-        this.COLOR_TOLERANCE = 20;
+        // 3개의 다른 마커 색상 (백업 파일의 정확한 사양)
+        this.MARKER_COLORS = {
+            top: { r: 255, g: 0, b: 110 },      // #ff006e 핑크
+            left: { r: 0, g: 180, b: 216 },     // #00b4d8 하늘색
+            right: { r: 114, g: 9, b: 183 }     // #7209b7 보라색
+        };
+
+        // 색상 허용 범위
+        this.COLOR_TOLERANCE = 20;   // 뉴런
+        this.MARKER_TOLERANCE = 40;  // 마커 (더 넓은 범위)
     }
 
     /**
@@ -104,27 +111,95 @@ class WIANeuralDecoder {
     }
 
     /**
-     * 마커 감지 (3개 위치 확인)
+     * 마커 감지 (3개 위치 확인 - 백업 파일의 정확한 사양)
      */
     detectMarkers(imageData) {
-        const { width, height, data } = imageData;
-        const markers = [];
+        const w = imageData.width;
+        const h = imageData.height;
+        const data = imageData.data;
 
-        // 예상 마커 위치 (Engine과 동일)
-        const expectedPositions = [
-            { x: 60, y: 60, name: 'top-left' },
-            { x: width - 60, y: 60, name: 'top-right' },
-            { x: 60, y: height - 60, name: 'bottom-left' }
+        // 예상 마커 위치와 색상 (백업 파일과 동일)
+        const expectedMarkers = [
+            {
+                name: 'top',
+                x: Math.round(w / 2),      // 가로 중앙
+                y: 30,                      // 상단 30px
+                color: this.MARKER_COLORS.top,
+                tolerance: this.MARKER_TOLERANCE
+            },
+            {
+                name: 'left',
+                x: 30,                      // 좌측 30px
+                y: h - 30,                  // 하단 30px
+                color: this.MARKER_COLORS.left,
+                tolerance: this.MARKER_TOLERANCE
+            },
+            {
+                name: 'right',
+                x: w - 30,                  // 우측 30px
+                y: h - 30,                  // 하단 30px
+                color: this.MARKER_COLORS.right,
+                tolerance: this.MARKER_TOLERANCE
+            }
         ];
 
-        expectedPositions.forEach(pos => {
-            // 반경 30px 내에서 마커 색상 검색
-            if (this.findMarkerAt(data, width, height, pos.x, pos.y, 30)) {
-                markers.push({ x: pos.x, y: pos.y, name: pos.name });
-            }
-        });
+        const foundMarkers = [];
 
-        return markers;
+        for (const expected of expectedMarkers) {
+            // 좌표 유효성 검사
+            if (expected.x < 0 || expected.x >= w || expected.y < 0 || expected.y >= h) {
+                continue;
+            }
+
+            // 마커 주변 영역 검사 (반경 50px - 마커 크기 고려)
+            let markerFound = false;
+            const searchRadius = 50;
+
+            for (let dy = -searchRadius; dy <= searchRadius; dy += 5) {
+                for (let dx = -searchRadius; dx <= searchRadius; dx += 5) {
+                    const checkX = Math.round(expected.x + dx);
+                    const checkY = Math.round(expected.y + dy);
+
+                    if (checkX < 0 || checkX >= w || checkY < 0 || checkY >= h) continue;
+
+                    const idx = (checkY * w + checkX) * 4;
+                    const r = data[idx];
+                    const g = data[idx + 1];
+                    const b = data[idx + 2];
+
+                    // 해당 마커의 색상 검출
+                    if (Math.abs(r - expected.color.r) < expected.tolerance &&
+                        Math.abs(g - expected.color.g) < expected.tolerance &&
+                        Math.abs(b - expected.color.b) < expected.tolerance) {
+
+                        foundMarkers.push({
+                            name: expected.name,
+                            x: checkX,
+                            y: checkY,
+                            color: { r, g, b }
+                        });
+                        markerFound = true;
+                        break;
+                    }
+                }
+                if (markerFound) break;
+            }
+
+            if (!markerFound) {
+                // 디버깅: 예상 위치의 실제 색상
+                const idx = (expected.y * w + expected.x) * 4;
+                console.warn(`❌ ${expected.name} 마커 못찾음. 예상 위치 색상:`, {
+                    x: expected.x,
+                    y: expected.y,
+                    r: data[idx],
+                    g: data[idx + 1],
+                    b: data[idx + 2],
+                    expected: expected.color
+                });
+            }
+        }
+
+        return foundMarkers;
     }
 
     /**

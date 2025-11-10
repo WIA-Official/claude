@@ -14,7 +14,13 @@ class WIANeuralEngine {
 
         // 표준화된 색상 (Decoder가 쉽게 감지 가능)
         this.NEURON_COLOR = 'rgb(120, 120, 220)';  // 보라색 (명확한 중간값)
-        this.MARKER_COLOR = 'rgb(220, 60, 100)';    // 빨강-분홍 (마커 구별)
+
+        // 3개의 다른 마커 색상 (백업 파일의 정확한 사양)
+        this.MARKER_COLORS = {
+            top: 'rgb(255, 0, 110)',      // #ff006e 핑크
+            left: 'rgb(0, 180, 216)',     // #00b4d8 하늘색
+            right: 'rgb(114, 9, 183)'     // #7209b7 보라색
+        };
 
         // 고해상도 설정
         const dpr = window.devicePixelRatio || 1;
@@ -113,66 +119,96 @@ class WIANeuralEngine {
     }
 
     /**
-     * 마커 렌더링 - 3개 위치
+     * 마커 렌더링 - 3개 위치 (백업 파일의 정확한 사양)
      */
     renderMarkers(width, height) {
         const ctx = this.ctx;
-        const size = 25; // 마커 크기
+        const size = 40; // 마커 크기 (너비 100px, 높이 80px 삼각형 기준)
 
-        // 3개 마커 위치 (고정된 위치)
+        // 3개 마커 위치 (백업 파일과 동일)
         const markers = [
-            { x: 60, y: 60 },                    // 좌상단
-            { x: width - 60, y: 60 },            // 우상단
-            { x: 60, y: height - 60 }            // 좌하단
+            {
+                name: 'top',
+                x: width / 2,           // 가로 중앙
+                y: 30,                  // 상단에서 30px
+                color: this.MARKER_COLORS.top,
+                direction: 'up'         // 위쪽을 가리킴
+            },
+            {
+                name: 'left',
+                x: 30,                  // 좌측에서 30px
+                y: height - 30,         // 하단에서 30px
+                color: this.MARKER_COLORS.left,
+                direction: 'down'       // 아래쪽을 가리킴
+            },
+            {
+                name: 'right',
+                x: width - 30,          // 우측에서 30px
+                y: height - 30,         // 하단에서 30px
+                color: this.MARKER_COLORS.right,
+                direction: 'down'       // 아래쪽을 가리킴
+            }
         ];
 
-        markers.forEach((pos, index) => {
+        markers.forEach((marker) => {
             ctx.save();
-            ctx.translate(pos.x, pos.y);
+            ctx.translate(marker.x, marker.y);
 
-            // 마커 타입별 렌더링
+            // 마커 타입별 렌더링 (각 마커마다 다른 색상)
             switch (this.markerType) {
                 case 'heart':
-                    this.drawHeart(size);
+                    this.drawHeart(size, marker.color);
                     break;
                 case 'star':
-                    this.drawStar(size);
+                    this.drawStar(size, marker.color);
                     break;
                 case 'diamond':
-                    this.drawDiamond(size);
+                    this.drawDiamond(size, marker.color);
                     break;
                 case 'moon':
-                    this.drawMoon(size);
+                    this.drawMoon(size, marker.color);
                     break;
                 case 'lightning':
-                    this.drawLightning(size);
+                    this.drawLightning(size, marker.color);
                     break;
                 default:
-                    this.drawTriangle(size);
+                    this.drawTriangle(size, marker.color, marker.direction);
             }
 
             ctx.restore();
         });
     }
 
-    // 마커 그리기 함수들
-    drawTriangle(size) {
+    // 마커 그리기 함수들 (각각 다른 색상 적용)
+    drawTriangle(size, color, direction = 'up') {
         const ctx = this.ctx;
-        ctx.beginPath();
-        ctx.moveTo(0, -size);
-        ctx.lineTo(-size * 0.866, size * 0.5);
-        ctx.lineTo(size * 0.866, size * 0.5);
-        ctx.closePath();
+        const width = size * 1.25;  // 너비 100px (50 * 2.5)
+        const height = size * 2;    // 높이 80px
 
-        ctx.fillStyle = this.MARKER_COLOR;
+        ctx.beginPath();
+
+        if (direction === 'up') {
+            // 위로 향하는 삼각형 (상단 마커)
+            ctx.moveTo(0, -height / 3);                    // 꼭지점
+            ctx.lineTo(-width, height * 2 / 3);           // 왼쪽 하단
+            ctx.lineTo(width, height * 2 / 3);            // 오른쪽 하단
+        } else {
+            // 아래로 향하는 삼각형 (하단 마커들)
+            ctx.moveTo(0, height / 3);                     // 아래 꼭지점
+            ctx.lineTo(-width, -height * 2 / 3);          // 왼쪽 상단
+            ctx.lineTo(width, -height * 2 / 3);           // 오른쪽 상단
+        }
+
+        ctx.closePath();
+        ctx.fillStyle = color;
         ctx.fill();
 
         ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 4;
+        ctx.lineWidth = 3;
         ctx.stroke();
     }
 
-    drawHeart(size) {
+    drawHeart(size, color) {
         const ctx = this.ctx;
         ctx.beginPath();
         ctx.moveTo(0, size * 0.3);
@@ -180,15 +216,15 @@ class WIANeuralEngine {
         ctx.bezierCurveTo(-size, -size * 0.3, -size * 0.5, -size * 0.8, 0, -size * 0.3);
         ctx.bezierCurveTo(size * 0.5, -size * 0.8, size, -size * 0.3, 0, size * 0.3);
 
-        ctx.fillStyle = this.MARKER_COLOR;
+        ctx.fillStyle = color;
         ctx.fill();
 
         ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 4;
+        ctx.lineWidth = 3;
         ctx.stroke();
     }
 
-    drawStar(size) {
+    drawStar(size, color) {
         const ctx = this.ctx;
         ctx.beginPath();
         for (let i = 0; i < 5; i++) {
@@ -200,15 +236,15 @@ class WIANeuralEngine {
         }
         ctx.closePath();
 
-        ctx.fillStyle = this.MARKER_COLOR;
+        ctx.fillStyle = color;
         ctx.fill();
 
         ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 4;
+        ctx.lineWidth = 3;
         ctx.stroke();
     }
 
-    drawDiamond(size) {
+    drawDiamond(size, color) {
         const ctx = this.ctx;
         ctx.beginPath();
         ctx.moveTo(0, -size);
@@ -217,19 +253,19 @@ class WIANeuralEngine {
         ctx.lineTo(-size, 0);
         ctx.closePath();
 
-        ctx.fillStyle = this.MARKER_COLOR;
+        ctx.fillStyle = color;
         ctx.fill();
 
         ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 4;
+        ctx.lineWidth = 3;
         ctx.stroke();
     }
 
-    drawMoon(size) {
+    drawMoon(size, color) {
         const ctx = this.ctx;
         ctx.beginPath();
         ctx.arc(0, 0, size, 0, Math.PI * 2);
-        ctx.fillStyle = this.MARKER_COLOR;
+        ctx.fillStyle = color;
         ctx.fill();
 
         ctx.beginPath();
@@ -238,11 +274,11 @@ class WIANeuralEngine {
         ctx.fill();
 
         ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 4;
+        ctx.lineWidth = 3;
         ctx.stroke();
     }
 
-    drawLightning(size) {
+    drawLightning(size, color) {
         const ctx = this.ctx;
         ctx.beginPath();
         ctx.moveTo(-size * 0.3, -size);
@@ -253,11 +289,11 @@ class WIANeuralEngine {
         ctx.lineTo(size * 0.1, size * 0.2);
         ctx.closePath();
 
-        ctx.fillStyle = this.MARKER_COLOR;
+        ctx.fillStyle = color;
         ctx.fill();
 
         ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 4;
+        ctx.lineWidth = 3;
         ctx.stroke();
     }
 
