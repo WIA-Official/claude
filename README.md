@@ -18,6 +18,7 @@ WIA Neural Code는 전통적인 QR 코드의 **격자 패턴**을 **아름다운
 - 🌍 **211개 언어**: 전세계 모든 언어 지원 (UTF-8)
 - 🚨 **99.9% 감지율**: 생명을 구하는 신뢰성! (CRC32 + Redundancy + ECC)
 - 🎁 **27+ 데이터 타입**: 텍스트부터 이미지, HTML, 의료정보까지 모든 것을 담는다!
+- 🧠 **Human Proof 기본 내장**: "기술이 인간을 보호해야해" - 생명 패턴 기반 봇 차단
 
 ### 🌐 지원하는 데이터 타입
 
@@ -77,11 +78,13 @@ WIA Neural Code는 전통적인 QR 코드의 **격자 패턴**을 **아름다운
 │   ├── wia-engine-100KB.js              ← Phase 4 Generator (504 neurons) 🏔️
 │   ├── wia-neural-decoder-100KB.js      ← Phase 4 Decoder 🏔️
 │   ├── wia-data-types.js                ← 데이터 타입 정의 (27+) 🎁
-│   └── wia-multi-format.js              ← 멀티포맷 시스템 🌐
+│   ├── wia-multi-format.js              ← 멀티포맷 시스템 🌐
+│   └── wia-human-proof.js               ← Human Proof System 🧠 NEW!
 ├── test-100KB.html                       ← Phase 4 테스트 페이지
-├── test-multi-format.html                ← 멀티포맷 테스트 페이지 ⭐ NEW!
+├── test-multi-format.html                ← 멀티포맷 테스트 페이지 ⭐
+├── test-human-proof.html                 ← Human Proof 테스트 🧠 NEW!
 ├── WIA-NEURAL-CODE-COMPLETE-GUIDE.md    ← 완전 가이드
-├── DATA-FORMATS.md                       ← 데이터 포맷 문서 📋 NEW!
+├── DATA-FORMATS.md                       ← 데이터 포맷 문서 📋
 ├── README.md                             ← 이 문서
 └── testsource                            ← Solidity 예제
 ```
@@ -226,6 +229,78 @@ Generator와 Scanner 모두 **480x480** 고정
 ## 📚 문서
 
 - [완전 개발 가이드](WIA-NEURAL-CODE-COMPLETE-GUIDE.md) - 필독! ⭐
+
+---
+
+## 🧠 Human Proof System
+
+**"기술이 인간을 보호해야해..따로 놀면 안되는거야"**
+
+WIA Neural Code는 모든 코드에 **Human Proof System이 기본 내장**되어 있습니다.
+
+### 왜 필요한가?
+
+기존 CAPTCHA의 문제:
+- ❌ 인간을 괴롭힙니다 ("교통 신호등을 모두 선택하세요")
+- ❌ 시각 장애인은 사용할 수 없습니다
+- ❌ 봇을 막기 위해 인간을 시험합니다
+
+**WIA Human Proof는 다릅니다:**
+- ✅ 생명의 패턴을 인식합니다
+- ✅ 봇은 숫자만 보지만, 인간은 리듬을 느낍니다
+- ✅ 완벽하지 않을수록 더 인간적!
+
+### 작동 원리
+
+3가지 생명 패턴:
+1. **💓 HEARTBEAT** - 심장 박동 리듬 (BPM + 변동성)
+2. **🌬️ BREATH** - 호흡 패턴 (자연스러움)
+3. **💗 PULSE** - 맥박 변화 (HRV - Heart Rate Variability)
+
+봇이 실패하는 이유:
+- 너무 정확함 (소수점 10자리 계산)
+- 너무 빠름 (0.1초 만에 답변)
+- 생명을 이해하지 못함 (숫자만 봄)
+
+### 사용법
+
+```javascript
+// 1. WIA 멀티포맷 초기화 (Human Proof 자동 활성화)
+const canvas = document.getElementById('canvas');
+const multiFormat = new WIAMultiFormat(canvas, 1);
+
+// 2. 챌린지 생성
+const challenge = multiFormat.createHumanChallenge('user-id');
+console.log(challenge.instruction); // "이 심장 박동은 얼마나 살아있나요?"
+
+// 3. 사용자 응답 검증
+const result = multiFormat.verifyHuman(
+    challenge.challengeId,
+    0.856,  // 사용자 응답 (0.0 ~ 1.0)
+    { ip: '127.0.0.1' }
+);
+
+if (result.valid) {
+    console.log('✅ 인간 확인!', result.humanScore); // 인간 점수: 95/100
+    // 토큰으로 WIA 코드 생성/디코딩 허용
+}
+```
+
+### 테스트
+
+```bash
+open test-human-proof.html
+```
+
+### 특징
+
+- 🧠 **생명 패턴 기반**: 심장박동, 호흡, 맥박
+- 🎯 **±15% 허용**: 정확할 필요 없음!
+- ⏱️ **타이밍 검증**: 2초 미만은 봇으로 의심
+- 🔒 **3번 기회**: 3번 실패 시 15분 차단
+- 📊 **인간 점수**: 완벽하지 않을수록 높은 점수
+- 🌐 **오프라인**: 인터넷 없이 작동
+- ♿ **접근성**: 시각적 패턴 + 음성 안내 (예정)
 
 ---
 

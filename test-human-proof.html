@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧠 WIA Human Proof System - Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 800px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 32px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .philosophy {
+            background: #f8f9ff;
+            border-left: 4px solid #667eea;
+            padding: 15px 20px;
+            margin-bottom: 30px;
+            border-radius: 5px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9ff;
+            border-radius: 10px;
+        }
+
+        .test-section h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+
+        canvas {
+            border: 2px solid #667eea;
+            border-radius: 10px;
+            display: block;
+            margin: 20px auto;
+            background: white;
+            cursor: pointer;
+        }
+
+        .challenge-info {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-size: 14px;
+            line-height: 1.8;
+        }
+
+        .challenge-info strong {
+            color: #667eea;
+        }
+
+        .instruction {
+            font-size: 18px;
+            color: #333;
+            text-align: center;
+            margin: 20px 0;
+            padding: 15px;
+            background: #fff3cd;
+            border-radius: 8px;
+            border: 2px solid #ffc107;
+        }
+
+        .answer-input {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .answer-input input {
+            width: 150px;
+            padding: 12px 20px;
+            font-size: 16px;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .answer-input input:focus {
+            outline: none;
+            border-color: #764ba2;
+            box-shadow: 0 0 0 3px rgba(118, 75, 162, 0.1);
+        }
+
+        button {
+            padding: 12px 30px;
+            font-size: 16px;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 8px;
+            font-size: 16px;
+            line-height: 1.6;
+            display: none;
+        }
+
+        .result.success {
+            background: #d4edda;
+            border: 2px solid #28a745;
+            color: #155724;
+            display: block;
+        }
+
+        .result.error {
+            background: #f8d7da;
+            border: 2px solid #dc3545;
+            color: #721c24;
+            display: block;
+        }
+
+        .result.warning {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            color: #856404;
+            display: block;
+        }
+
+        .stats {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 10px;
+            background: #f8f9ff;
+            border-radius: 5px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .bot-info {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+            padding: 15px 20px;
+            margin-top: 20px;
+            border-radius: 5px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .human-score {
+            display: inline-block;
+            padding: 5px 15px;
+            background: #667eea;
+            color: white;
+            border-radius: 20px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .tips {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 15px 20px;
+            margin-top: 20px;
+            border-radius: 5px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .tips ul {
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+
+        .tips li {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧠 WIA Human Proof System</h1>
+        <p class="subtitle">"기술이 인간을 보호해야해" - Built-in Bot Protection</p>
+
+        <div class="philosophy">
+            <strong>💡 철학</strong><br>
+            기존 CAPTCHA는 인간을 괴롭힙니다. "교통 신호등을 모두 선택하세요" 같은 퀴즈는 봇을 막기 위해 인간을 시험합니다.<br>
+            <strong>WIA Human Proof는 다릅니다.</strong><br>
+            우리는 '생명의 패턴'을 인식합니다. 봇은 숫자만 보지만, 인간은 심장 박동의 리듬을 느낍니다. 호흡의 자연스러움을 압니다.
+        </div>
+
+        <div class="test-section">
+            <h2>📊 패턴 시각화</h2>
+            <p style="text-align: center; margin-bottom: 15px;">아래 생명 패턴을 보고 느껴보세요</p>
+
+            <canvas id="patternCanvas" width="700" height="300"></canvas>
+
+            <div class="challenge-info" id="challengeInfo" style="display:none;">
+                <strong>📋 챌린지 정보</strong><br>
+                <span id="challengeDetails"></span>
+            </div>
+
+            <div class="instruction" id="instruction" style="display:none;">
+                ❓ 이 패턴의 생명력을 느껴보세요 (0.0 ~ 1.0)
+            </div>
+
+            <div class="answer-input" id="answerSection" style="display:none;">
+                <input type="number" id="userAnswer" min="0" max="1" step="0.001" placeholder="0.000" />
+                <button onclick="submitAnswer()">✅ 확인</button>
+                <button onclick="newChallenge()">🔄 새로 받기</button>
+            </div>
+
+            <div id="result" class="result"></div>
+
+            <div class="stats" id="stats" style="display:none;">
+                <div class="stat-item">
+                    <span class="stat-value" id="totalChallenges">0</span>
+                    <span class="stat-label">총 챌린지</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value" id="solvedChallenges">0</span>
+                    <span class="stat-label">해결됨</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value" id="successRate">0%</span>
+                    <span class="stat-label">성공률</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="bot-info">
+            <strong>🤖 봇은 왜 실패하나?</strong><br>
+            1. <strong>정확도의 역설</strong>: 봇은 너무 정확합니다. 생명 점수를 소수점 10자리까지 계산하지만, 인간은 "느낌"으로 답합니다.<br>
+            2. <strong>속도의 역설</strong>: 봇은 너무 빠릅니다. 0.1초 만에 답하지만, 인간은 패턴을 보고 2-5초 정도 생각합니다.<br>
+            3. <strong>생명의 이해</strong>: 봇은 숫자만 봅니다. 인간은 심장 박동의 "살아있음"을 느낍니다.
+        </div>
+
+        <div class="tips">
+            <strong>💡 사용 팁</strong>
+            <ul>
+                <li><strong>정확할 필요 없습니다</strong> - ±15% 오차 허용. 느낌으로 답하세요!</li>
+                <li><strong>생각하는 시간</strong> - 2초 미만은 봇으로 의심됩니다</li>
+                <li><strong>3번의 기회</strong> - 3번 실패 시 15분 차단</li>
+                <li><strong>완벽하지 않을수록 인간적</strong> - 약간의 오차가 있어야 높은 점수!</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Dependencies -->
+    <script src="assets/js/wia-human-proof.js"></script>
+
+    <script>
+        // Global variables
+        let humanProof;
+        let renderer;
+        let currentChallenge = null;
+        let currentChallengeId = null;
+
+        // Initialize
+        window.onload = () => {
+            const canvas = document.getElementById('patternCanvas');
+            humanProof = new WIAHumanProof();
+            renderer = new WIAHumanProofRenderer(canvas);
+
+            console.log('🧠 WIA Human Proof System 초기화 완료');
+
+            // 첫 챌린지 생성
+            newChallenge();
+        };
+
+        // 새 챌린지 생성
+        function newChallenge() {
+            try {
+                // 이전 결과 숨기기
+                document.getElementById('result').style.display = 'none';
+                document.getElementById('userAnswer').value = '';
+
+                // 챌린지 생성
+                const challenge = humanProof.generateChallenge('test-user');
+                currentChallenge = challenge;
+                currentChallengeId = challenge.challengeId;
+
+                console.log('🎯 새 챌린지 생성:', challenge);
+
+                // UI 표시
+                document.getElementById('challengeInfo').style.display = 'block';
+                document.getElementById('instruction').style.display = 'block';
+                document.getElementById('answerSection').style.display = 'flex';
+
+                // 챌린지 정보 표시
+                const expiresMin = Math.floor(challenge.expiresIn / 60000);
+                document.getElementById('challengeDetails').innerHTML = `
+                    <strong>ID:</strong> ${challenge.challengeId}<br>
+                    <strong>패턴 타입:</strong> ${getPatternTypeName(challenge.pattern.type)}<br>
+                    <strong>유효 시간:</strong> ${expiresMin}분<br>
+                    <strong>설명:</strong> ${challenge.instruction}
+                `;
+
+                // 설명 표시
+                document.getElementById('instruction').textContent = challenge.instruction;
+
+                // 패턴 렌더링
+                renderer.render(challenge.pattern);
+
+                // 통계 업데이트
+                updateStats();
+
+            } catch (error) {
+                console.error('❌ 챌린지 생성 실패:', error);
+                showResult('error', '❌ 챌린지 생성 실패: ' + error.message);
+            }
+        }
+
+        // 답안 제출
+        function submitAnswer() {
+            const userAnswer = parseFloat(document.getElementById('userAnswer').value);
+
+            if (isNaN(userAnswer) || userAnswer < 0 || userAnswer > 1) {
+                showResult('error', '❌ 0.0 ~ 1.0 사이의 숫자를 입력하세요');
+                return;
+            }
+
+            try {
+                // 검증
+                const result = humanProof.validate(
+                    currentChallengeId,
+                    userAnswer,
+                    {
+                        ip: '127.0.0.1',
+                        userAgent: navigator.userAgent
+                    }
+                );
+
+                console.log('📝 검증 결과:', result);
+
+                if (result.valid) {
+                    // 성공!
+                    showResult(
+                        'success',
+                        `✅ 인간 확인 완료!<br>` +
+                        `<strong>인간 점수:</strong> <span class="human-score">${result.humanScore}/100</span><br>` +
+                        `<strong>토큰:</strong> ${result.token.token}<br>` +
+                        `<strong>유효 기간:</strong> ${Math.floor((result.token.expiresAt - Date.now()) / 60000)}분<br>` +
+                        `${result.message}`
+                    );
+
+                    // 다음 챌린지 자동 생성
+                    setTimeout(newChallenge, 2000);
+
+                } else {
+                    // 실패
+                    let message = `❌ ${result.message}`;
+
+                    if (result.attemptsLeft !== undefined) {
+                        message += `<br><strong>남은 시도:</strong> ${result.attemptsLeft}회`;
+                    }
+
+                    if (result.reason === 'TOO_FAST') {
+                        message += `<br><br>💡 <strong>팁:</strong> 봇은 너무 빠릅니다! 패턴을 보고 생각하는 시간이 필요합니다.`;
+                    }
+
+                    if (result.reason === 'IP_BLOCKED') {
+                        const remainingMin = Math.floor((result.unblockAt - Date.now()) / 60000);
+                        message += `<br><strong>차단 해제:</strong> ${remainingMin}분 후`;
+                    }
+
+                    showResult('error', message);
+                }
+
+                // 통계 업데이트
+                updateStats();
+
+            } catch (error) {
+                console.error('❌ 검증 실패:', error);
+                showResult('error', '❌ 검증 중 오류 발생: ' + error.message);
+            }
+        }
+
+        // 결과 표시
+        function showResult(type, message) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.className = `result ${type}`;
+            resultDiv.innerHTML = message;
+        }
+
+        // 통계 업데이트
+        function updateStats() {
+            const stats = humanProof.getStats();
+
+            document.getElementById('stats').style.display = 'grid';
+            document.getElementById('totalChallenges').textContent = stats.totalChallenges;
+            document.getElementById('solvedChallenges').textContent = stats.solvedChallenges;
+            document.getElementById('successRate').textContent = stats.successRate;
+
+            console.log('📊 통계:', stats);
+        }
+
+        // 패턴 타입 이름
+        function getPatternTypeName(type) {
+            const names = {
+                'HEARTBEAT': '💓 심장 박동',
+                'BREATH': '🌬️ 호흡',
+                'PULSE': '💗 맥박'
+            };
+            return names[type] || type;
+        }
+
+        // Enter 키로 제출
+        document.addEventListener('DOMContentLoaded', () => {
+            const input = document.getElementById('userAnswer');
+            if (input) {
+                input.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        submitAnswer();
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

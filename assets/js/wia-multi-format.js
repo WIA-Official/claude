@@ -5,12 +5,17 @@
  *
  * "모든 것을 담는다" - 기존 엔진 위에 구축된 멀티포맷 레이어
  *
+ * 🧠 **"기술이 인간을 보호해야해"** - Built-in Human Proof System
+ * ♿ **"모든 인간을 위한 기술"** - Built-in Accessibility System
+ *
  * Dependencies:
  * - wia-data-types.js
  * - wia-engine-BEAUTIFUL-QR.js (Phase 1)
  * - wia-engine-100KB.js (Phase 4)
  * - wia-neural-decoder.js (Phase 1)
  * - wia-neural-decoder-100KB.js (Phase 4)
+ * - wia-human-proof.js (🧠 Built-in)
+ * - wia-accessibility.js (♿ Built-in)
  */
 
 /**
@@ -18,9 +23,27 @@
  * 모든 데이터 타입을 자동으로 처리
  */
 class WIAMultiFormat {
-    constructor(canvas, phase = 1) {
+    constructor(canvas, phase = 1, options = {}) {
         this.canvas = canvas;
         this.phase = phase;
+
+        // 🧠 Human Proof System - 기본 내장 (옵션 아님!)
+        // "기술이 인간을 보호해야해..따로 놀면 안되는거야"
+        this.humanProofEnabled = options.humanProof !== false; // 기본값: true
+
+        if (this.humanProofEnabled && typeof WIAHumanProof !== 'undefined') {
+            this.humanProof = new WIAHumanProof();
+            console.log('🧠 Human Proof System: 활성화 (Built-in Protection)');
+        }
+
+        // ♿ Accessibility System - 기본 내장!
+        // "모든 인간을 위한 기술"
+        this.accessibilityEnabled = options.accessibility !== false; // 기본값: true
+
+        if (this.accessibilityEnabled && typeof WIAAccessibility !== 'undefined') {
+            this.accessibility = new WIAAccessibility(options.accessibilityOptions || {});
+            console.log('♿ Accessibility System: 활성화 (Universal Design)');
+        }
 
         // Phase에 맞는 엔진 선택
         if (phase === 1) {
@@ -37,6 +60,48 @@ class WIAMultiFormat {
 
         console.log(`🎁 WIA MultiFormat 초기화! (Phase ${phase})`);
         console.log(`  - 최대 용량: ${this.maxCapacity} bytes`);
+        console.log(`  - 인간 보호: ${this.humanProofEnabled ? '✅ 활성' : '❌ 비활성'}`);
+        console.log(`  - 접근성: ${this.accessibilityEnabled ? '✅ 활성' : '❌ 비활성'}`);
+    }
+
+    /**
+     * 🧠 인간 확인 챌린지 생성
+     *
+     * 봇이 WIA 코드를 생성하거나 사용하는 것을 방지
+     */
+    createHumanChallenge(userId) {
+        if (!this.humanProofEnabled || !this.humanProof) {
+            throw new Error('Human Proof System이 비활성화되어 있습니다');
+        }
+
+        return this.humanProof.generateChallenge(userId);
+    }
+
+    /**
+     * 🧠 인간 확인 검증
+     *
+     * @param {string} challengeId - 챌린지 ID
+     * @param {number} userResponse - 사용자 응답 (0.0 ~ 1.0)
+     * @param {Object} metadata - { ip, userAgent, etc }
+     */
+    verifyHuman(challengeId, userResponse, metadata = {}) {
+        if (!this.humanProofEnabled || !this.humanProof) {
+            // Human Proof 비활성화 시 항상 통과
+            return { valid: true, reason: 'DISABLED' };
+        }
+
+        return this.humanProof.validate(challengeId, userResponse, metadata);
+    }
+
+    /**
+     * 🧠 토큰 검증 (생성/디코딩 시 사용)
+     */
+    verifyHumanToken(token) {
+        if (!this.humanProofEnabled || !this.humanProof) {
+            return { valid: true, reason: 'DISABLED' };
+        }
+
+        return this.humanProof.verifyToken(token);
     }
 
     /**
@@ -101,40 +166,64 @@ class WIAMultiFormat {
         console.log(`  - Phase: ${this.phase}`);
         console.log(`  - 멀티 스캔: ${useRetry ? 'ON (최대 3회)' : 'OFF'}`);
 
-        // 1. 기존 디코더로 디코딩
-        let result;
-        if (useRetry) {
-            result = await this.decoder.decodeWithRetry(source, 3);
-        } else {
-            result = await this.decoder.decode(source);
+        // ♿ 접근성: 스캔 시작 안내
+        if (this.accessibility) {
+            this.accessibility.announceToScreenReader('WIA 코드 스캔 시작');
         }
 
-        // 2. 복원된 문자열을 바이트 배열로 변환
-        const packageBytes = this.stringToBytes(result.data);
+        try {
+            // 1. 기존 디코더로 디코딩
+            let result;
+            if (useRetry) {
+                result = await this.decoder.decodeWithRetry(source, 3);
+            } else {
+                result = await this.decoder.decode(source);
+            }
 
-        // 3. WIA 패키지 언패킹
-        const unpacked = WIADataPackage.unpack(packageBytes);
+            // 2. 복원된 문자열을 바이트 배열로 변환
+            const packageBytes = this.stringToBytes(result.data);
 
-        // 4. 데이터 후처리
-        const finalData = this.postprocessData(unpacked.typeId, unpacked.data);
+            // 3. WIA 패키지 언패킹
+            const unpacked = WIADataPackage.unpack(packageBytes);
 
-        console.log(`\n🎉 === 멀티포맷 디코딩 성공! ===`);
-        console.log(`  - Type: ${unpacked.typeName} ${WIADataPackage.getTypeIcon(unpacked.typeId)}`);
-        console.log(`  - 신뢰도: ${unpacked.reliability}`);
-        console.log(`  - CRC32: ${unpacked.crcValid ? '✅' : '❌'}`);
-        console.log(`  - 패리티: ${unpacked.parityValid ? '✅' : '❌'}\n`);
+            // 4. 데이터 후처리
+            const finalData = this.postprocessData(unpacked.typeId, unpacked.data);
 
-        return {
-            success: true,
-            typeId: unpacked.typeId,
-            typeName: unpacked.typeName,
-            typeIcon: WIADataPackage.getTypeIcon(unpacked.typeId),
-            data: finalData,
-            reliability: unpacked.reliability,
-            crcValid: unpacked.crcValid,
-            parityValid: unpacked.parityValid,
-            phase: this.phase
-        };
+            console.log(`\n🎉 === 멀티포맷 디코딩 성공! ===`);
+            console.log(`  - Type: ${unpacked.typeName} ${WIADataPackage.getTypeIcon(unpacked.typeId)}`);
+            console.log(`  - 신뢰도: ${unpacked.reliability}`);
+            console.log(`  - CRC32: ${unpacked.crcValid ? '✅' : '❌'}`);
+            console.log(`  - 패리티: ${unpacked.parityValid ? '✅' : '❌'}\n`);
+
+            const decodeResult = {
+                success: true,
+                typeId: unpacked.typeId,
+                typeName: unpacked.typeName,
+                typeIcon: WIADataPackage.getTypeIcon(unpacked.typeId),
+                data: finalData,
+                reliability: unpacked.reliability,
+                crcValid: unpacked.crcValid,
+                parityValid: unpacked.parityValid,
+                phase: this.phase
+            };
+
+            // ♿ 접근성: 성공 피드백
+            if (this.accessibility) {
+                this.accessibility.guideScanSuccess(decodeResult);
+            }
+
+            return decodeResult;
+
+        } catch (error) {
+            console.error('❌ 디코딩 실패:', error);
+
+            // ♿ 접근성: 실패 피드백
+            if (this.accessibility) {
+                this.accessibility.guideScanError(error.message);
+            }
+
+            throw error;
+        }
     }
 
     /**
