@@ -1044,9 +1044,46 @@ END:VCARD</textarea>
         // Global Variables
         let currentType = 'text';
         let encoder = new WIANeuralEncoder();
-        let canvas = document.getElementById('previewCanvas');
-        let engine = new WIANeuralEngine(canvas);
+        let canvas, ctx, wiaEngine;
         let currentPattern = null;
+
+        // Setup Canvas with DPR support
+        function setupCanvas() {
+            canvas = document.getElementById('previewCanvas');
+            ctx = canvas.getContext('2d');
+
+            // 고해상도 캔버스 설정
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = 480 * dpr;
+            canvas.height = 480 * dpr;
+            ctx.scale(dpr, dpr);
+
+            // 초기 배경 설정
+            ctx.fillStyle = '#f8f9fa';
+            ctx.fillRect(0, 0, 480, 480);
+        }
+
+        // Generate WIA Preview with Neural Engine
+        async function generateWIAPreview(data) {
+            return new Promise((resolve) => {
+                try {
+                    console.log("🎨 WIA 미리보기 생성:", data);
+
+                    // WIA Neural Engine이 없으면 생성
+                    if (!wiaEngine) {
+                        wiaEngine = new WIANeuralEngine(canvas);
+                    }
+
+                    // WIA Neural Code 생성
+                    wiaEngine.generate(data || "샘플 텍스트", "complex", "high");
+
+                    resolve();
+                } catch (error) {
+                    console.error("❌ WIA 미리보기 오류:", error);
+                    resolve();
+                }
+            });
+        }
 
         // Data Type Metadata
         const dataTypeInfo = {
@@ -1084,6 +1121,7 @@ END:VCARD</textarea>
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
+            setupCanvas();
             setupTypeButtons();
             updatePreview();
         });
@@ -1318,21 +1356,18 @@ END:VCARD</textarea>
         }
 
         // Update Preview
-        function updatePreview() {
+        async function updatePreview() {
             try {
                 const data = collectFormData();
+
+                // Prepare data string for WIA engine
+                const dataString = JSON.stringify(data);
+
+                // Generate WIA preview using Neural Engine
+                await generateWIAPreview(dataString);
+
+                // Encode for metadata
                 currentPattern = encoder.encode(currentType, data);
-
-                // Clear canvas
-                const ctx = canvas.getContext('2d');
-                ctx.fillStyle = 'white';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-                // Draw QR markers
-                drawQRMarkers(ctx);
-
-                // Draw neural network
-                drawNeuralNetwork(ctx, currentPattern);
 
                 // Update info
                 const typeInfo = dataTypeInfo[currentType] || { name: currentType, category: 'unknown' };
