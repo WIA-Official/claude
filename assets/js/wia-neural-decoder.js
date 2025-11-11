@@ -116,34 +116,125 @@ class WIANeuralDecoder {
      * 마커 감지 - QR 스타일 (검정-흰색-검정 패턴)
      */
     detectMarkers(imageData) {
+        // ✅ 입력 검증
+        if (!imageData || typeof imageData.width === 'undefined') {
+            throw new Error('Invalid imageData object');
+        }
+
         const w = imageData.width;
         const h = imageData.height;
         const data = imageData.data;
-        const size = this.MARKER_SIZE;
 
-        // 3개 마커 예상 위치 (QR와 동일 - 좌상, 우상, 좌하)
-        const expectedPositions = [
-            { name: 'top-left', x: Math.floor(size / 2), y: Math.floor(size / 2) },
-            { name: 'top-right', x: w - Math.floor(size / 2), y: Math.floor(size / 2) },
-            { name: 'bottom-left', x: Math.floor(size / 2), y: h - Math.floor(size / 2) }
+        console.log('🔍 detectMarkers 시작:', {
+            width: w,
+            height: h,
+            dataLength: data.length,
+            expected: w * h * 4
+        });
+
+        // ✅ 유효성 검증
+        if (w <= 0 || h <= 0 || data.length !== w * h * 4) {
+            throw new Error(`Invalid dimensions: ${w}x${h}, data: ${data.length}`);
+        }
+
+        // QR 마커 위치 (중심점 기준)
+        const positions = [
+            { x: 30, y: 30, name: 'top-left' },
+            { x: w - 30, y: 30, name: 'top-right' },
+            { x: 30, y: h - 30, name: 'bottom-left' }
         ];
 
         const foundMarkers = [];
 
-        for (const pos of expectedPositions) {
-            // QR 마커 패턴 검증: 검정-흰색-검정
-            if (this.isQRMarkerPattern(data, w, h, pos.x, pos.y, size)) {
-                foundMarkers.push({
-                    name: pos.name,
-                    x: pos.x,
-                    y: pos.y
-                });
+        for (const pos of positions) {
+            // ✅ 범위 체크
+            if (pos.x < 0 || pos.x >= w || pos.y < 0 || pos.y >= h) {
+                console.warn(`⚠️ ${pos.name}: 범위 벗어남`, pos);
+                continue;
+            }
+
+            // QR 패턴 검출
+            const result = this.findQRPatternAt(data, w, h, pos.x, pos.y);
+
+            if (result) {
+                console.log(`✅ ${pos.name} 발견:`, result);
+                foundMarkers.push({ ...result, name: pos.name });
             } else {
-                console.warn(`❌ ${pos.name} QR 마커 패턴 불일치`);
+                console.warn(`❌ ${pos.name} 못찾음`);
             }
         }
 
+        if (foundMarkers.length < 3) {
+            // 디버깅 샘플
+            const samples = positions.map(pos => {
+                // ✅ 안전한 인덱스 계산
+                if (pos.x < 0 || pos.x >= w || pos.y < 0 || pos.y >= h) {
+                    return {
+                        name: pos.name,
+                        x: pos.x,
+                        y: pos.y,
+                        error: 'out of bounds'
+                    };
+                }
+                const idx = (pos.y * w + pos.x) * 4;
+                if (idx < 0 || idx >= data.length - 3) {
+                    return {
+                        name: pos.name,
+                        x: pos.x,
+                        y: pos.y,
+                        error: 'invalid index'
+                    };
+                }
+                return {
+                    name: pos.name,
+                    x: pos.x,
+                    y: pos.y,
+                    r: data[idx],
+                    g: data[idx + 1],
+                    b: data[idx + 2],
+                    a: data[idx + 3]
+                };
+            });
+
+            throw new Error(`QR 마커 감지 실패 (${foundMarkers.length}/3)\nImageData: ${w}x${h}\n샘플: ${JSON.stringify(samples)}`);
+        }
+
         return foundMarkers;
+    }
+
+    /**
+     * QR 패턴 검출 함수 - 검정색 사각형 찾기
+     */
+    findQRPatternAt(data, w, h, centerX, centerY) {
+        const size = 60;
+        const half = size / 2;
+
+        // 검색 영역 (60x60 영역을 5px 간격으로 샘플링)
+        for (let dy = -half; dy <= half; dy += 5) {
+            for (let dx = -half; dx <= half; dx += 5) {
+                const x = Math.round(centerX + dx);
+                const y = Math.round(centerY + dy);
+
+                // 범위 체크
+                if (x < 0 || x >= w || y < 0 || y >= h) continue;
+
+                const idx = (y * w + x) * 4;
+
+                // 범위 체크
+                if (idx < 0 || idx >= data.length - 3) continue;
+
+                const r = data[idx];
+                const g = data[idx + 1];
+                const b = data[idx + 2];
+
+                // QR 검정색 (r,g,b < 50)
+                if (r < 50 && g < 50 && b < 50) {
+                    return { x, y, color: { r, g, b } };
+                }
+            }
+        }
+
+        return null;
     }
 
     /**
