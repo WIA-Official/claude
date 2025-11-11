@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎁 WIA Multi-Format Test - 모든 것을 담는다</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 36px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 18px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .panel {
+            background: #f8f9ff;
+            border-radius: 15px;
+            padding: 25px;
+            border: 2px solid #667eea;
+        }
+
+        .panel h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        select, input, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        select:focus, input:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+            font-family: monospace;
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .canvas-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        canvas {
+            border: 3px solid #667eea;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            background: white;
+        }
+
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+
+        .info-box strong {
+            color: #1976d2;
+        }
+
+        .type-examples {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .type-btn {
+            padding: 10px;
+            background: white;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .type-btn:hover {
+            background: #667eea;
+            color: white;
+            transform: scale(1.05);
+        }
+
+        .type-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        #result {
+            margin-top: 20px;
+        }
+
+        .phase-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .phase-btn {
+            flex: 1;
+            padding: 15px;
+            background: white;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .phase-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .stat {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border: 2px solid #ddd;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎁 WIA Multi-Format System</h1>
+        <div class="subtitle">"모든 것을 담는다" - 27+ Data Types Support</div>
+
+        <!-- Phase 선택 -->
+        <div class="phase-selector">
+            <button class="phase-btn active" onclick="selectPhase(1)">
+                Phase 1 (9KB)<br>
+                <small>~28 bytes</small>
+            </button>
+            <button class="phase-btn" onclick="selectPhase(4)">
+                Phase 4 (100KB)<br>
+                <small>~756 bytes</small>
+            </button>
+        </div>
+
+        <!-- 통계 -->
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-value" id="stat-phase">1</div>
+                <div class="stat-label">Current Phase</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="stat-capacity">28</div>
+                <div class="stat-label">Capacity (bytes)</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="stat-usage">0%</div>
+                <div class="stat-label">Usage</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="stat-reliability">99.9%</div>
+                <div class="stat-label">Reliability</div>
+            </div>
+        </div>
+
+        <div class="grid">
+            <!-- Generator -->
+            <div class="panel">
+                <h2>🎨 Generator</h2>
+
+                <!-- 타입 선택 -->
+                <div class="form-group">
+                    <label>데이터 타입</label>
+                    <select id="dataType" onchange="updateDataForm()">
+                        <optgroup label="정적 WIA (0x01~0x0F)">
+                            <option value="0x01">📝 텍스트</option>
+                            <option value="0x02">💬 SMS</option>
+                            <option value="0x03">📶 WiFi</option>
+                            <option value="0x04">👤 vCard (정적)</option>
+                            <option value="0x05">📅 이벤트</option>
+                            <option value="0x07">🏥 의료 정보</option>
+                            <option value="0x08">🌍 위치 (PIN)</option>
+                        </optgroup>
+                        <optgroup label="동적 WIA (0x11~0x1F)">
+                            <option value="0x11">🔗 URL</option>
+                            <option value="0x12">📧 이메일</option>
+                            <option value="0x13">📞 전화</option>
+                            <option value="0x18">💚 WhatsApp</option>
+                        </optgroup>
+                        <optgroup label="100KB 전용 (0x20~0x3F)">
+                            <option value="0x20">🌐 HTML 페이지</option>
+                            <option value="0x22">🖼️ JPEG 이미지</option>
+                        </optgroup>
+                    </select>
+                </div>
+
+                <!-- 동적 데이터 입력 폼 -->
+                <div id="dataForm">
+                    <!-- JavaScript로 동적 생성 -->
+                </div>
+
+                <button onclick="generateWIA()">🚀 생성하기</button>
+
+                <div class="canvas-container">
+                    <canvas id="generatorCanvas"></canvas>
+                </div>
+
+                <div id="generatorInfo"></div>
+            </div>
+
+            <!-- Decoder -->
+            <div class="panel">
+                <h2>🔍 Decoder</h2>
+
+                <div class="info-box">
+                    <strong>💡 Tip:</strong> 생성된 WIA 코드를 자동으로 디코딩합니다!
+                    <br>멀티 스캔 재시도로 99.9% 신뢰성을 보장합니다.
+                </div>
+
+                <button onclick="decodeWIA()">🔍 디코딩하기</button>
+
+                <div id="result"></div>
+            </div>
+        </div>
+
+        <!-- 퀵 예제 -->
+        <div class="panel">
+            <h2>⚡ Quick Examples</h2>
+            <div class="type-examples">
+                <div class="type-btn" onclick="loadExample('text')">
+                    📝<br>텍스트
+                </div>
+                <div class="type-btn" onclick="loadExample('url')">
+                    🔗<br>URL
+                </div>
+                <div class="type-btn" onclick="loadExample('vcard')">
+                    👤<br>명함
+                </div>
+                <div class="type-btn" onclick="loadExample('wifi')">
+                    📶<br>WiFi
+                </div>
+                <div class="type-btn" onclick="loadExample('sms')">
+                    💬<br>SMS
+                </div>
+                <div class="type-btn" onclick="loadExample('email')">
+                    📧<br>이메일
+                </div>
+                <div class="type-btn" onclick="loadExample('medical')">
+                    🏥<br>의료
+                </div>
+                <div class="type-btn" onclick="loadExample('location')">
+                    🌍<br>위치
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="assets/js/wia-data-types.js"></script>
+    <script src="assets/js/wia-engine-BEAUTIFUL-QR.js"></script>
+    <script src="assets/js/wia-engine-100KB.js"></script>
+    <script src="assets/js/wia-neural-decoder.js"></script>
+    <script src="assets/js/wia-neural-decoder-100KB.js"></script>
+    <script src="assets/js/wia-multi-format.js"></script>
+
+    <script>
+        let currentPhase = 1;
+        let multiFormat = null;
+
+        // 초기화
+        window.onload = function() {
+            selectPhase(1);
+            updateDataForm();
+        };
+
+        // Phase 선택
+        function selectPhase(phase) {
+            currentPhase = phase;
+
+            // 버튼 스타일 업데이트
+            document.querySelectorAll('.phase-btn').forEach((btn, idx) => {
+                btn.classList.toggle('active', (idx === 0 && phase === 1) || (idx === 1 && phase === 4));
+            });
+
+            // Canvas 크기 설정
+            const canvas = document.getElementById('generatorCanvas');
+            const size = phase === 1 ? 480 : 960;
+            canvas.width = size;
+            canvas.height = size;
+
+            // MultiFormat 인스턴스 생성
+            multiFormat = new WIAMultiFormat(canvas, phase);
+
+            // 통계 업데이트
+            document.getElementById('stat-phase').textContent = phase;
+            document.getElementById('stat-capacity').textContent = multiFormat.maxCapacity;
+
+            console.log(`✅ Phase ${phase} 선택됨!`);
+        }
+
+        // 데이터 타입에 따른 입력 폼 업데이트
+        function updateDataForm() {
+            const typeId = parseInt(document.getElementById('dataType').value);
+            const form = document.getElementById('dataForm');
+
+            switch (typeId) {
+                case 0x01: // 텍스트
+                    form.innerHTML = `
+                        <div class="form-group">
+                            <label>텍스트</label>
+                            <textarea id="inputText" placeholder="Hello World! 안녕하세요!">Hello World! 안녕하세요!</textarea>
+                        </div>
+                    `;
+                    break;
+
+                case 0x11: // URL
+                    form.innerHTML = `
+                        <div class="form-group">
+                            <label>URL</label>
+                            <input type="url" id="inputUrl" placeholder="https://example.com" value="https://example.com">
+                        </div>
+                    `;
+                    break;
+
+                case 0x04: // vCard
+                    form.innerHTML = `
+                        <div class="form-group">
+                            <label>이름</label>
+                            <input type="text" id="vcardName" placeholder="홍길동" value="홍길동">
+                        </div>
+                        <div class="form-group">
+                            <label>전화번호</label>
+                            <input type="tel" id="vcardPhone" placeholder="+82-10-1234-5678" value="+82-10-1234-5678">
+                        </div>
+                        <div class="form-group">
+                            <label>이메일</label>
+                            <input type="email" id="vcardEmail" placeholder="hong@example.com" value="hong@example.com">
+                        </div>
+                        <div class="form-group">
+                            <label>회사</label>
+                            <input type="text" id="vcardOrg" placeholder="WIA Corp" value="WIA Corp">
+                        </div>
+                        <div class="form-group">
+                            <label>직함</label>
+                            <input type="text" id="vcardTitle" placeholder="CEO" value="CEO">
+                        </div>
+                    `;
+                    break;
+
+                case 0x03: // WiFi
+                    form.innerHTML = `
+                        <div class="form-group">
+                            <label>SSID</label>
+                            <input type="text" id="wifiSsid" placeholder="MyWiFi" value="MyWiFi">
+                        </div>
+                        <div class="form-group">
+                            <label>비밀번호</label>
+                            <input type="text" id="wifiPassword" placeholder="password123" value="password123">
+                        </div>
+                        <div class="form-group">
+                            <label>보안</label>
+                            <select id="wifiSecurity">
+                                <option value="WPA2">WPA2</option>
+                                <option value="WPA">WPA</option>
+                                <option value="WEP">WEP</option>
+                                <option value="nopass">없음</option>
+                            </select>
+                        </div>
+                    `;
+                    break;
+
+                case 0x02: // SMS
+                    form.innerHTML = `
+                        <div class="form-group">
+                            <label>전화번호</label>
+                            <input type="tel" id="smsPhone" placeholder="+82-10-1234-5678" value="+82-10-1234-5678">
+                        </div>
+                        <div class="form-group">
+                            <label>메시지</label>
+                            <textarea id="smsMessage" placeholder="안녕하세요!">안녕하세요!</textarea>
+                        </div>
+                    `;
+                    break;
+
+                case 0x12: // 이메일
+                    form.innerHTML = `
+                        <div class="form-group">
+                            <label>받는 사람</label>
+                            <input type="email" id="emailTo" placeholder="hello@example.com" value="hello@example.com">
+                        </div>
+                        <div class="form-group">
+                            <label>제목</label>
+                            <input type="text" id="emailSubject" placeholder="안녕하세요" value="안녕하세요">
+                        </div>
+                        <div class="form-group">
+                            <label>본문</label>
+                            <textarea id="emailBody" placeholder="이메일 본문...">이메일 본문입니다.</textarea>
+                        </div>
+                    `;
+                    break;
+
+                case 0x07: // 의료 정보
+                    form.innerHTML = `
+                        <div class="form-group">
+                            <label>혈액형</label>
+                            <input type="text" id="medicalBlood" placeholder="A+" value="A+">
+                        </div>
+                        <div class="form-group">
+                            <label>알레르기 (쉼표로 구분)</label>
+                            <input type="text" id="medicalAllergies" placeholder="페니실린, 땅콩" value="페니실린, 땅콩">
+                        </div>
+                        <div class="form-group">
+                            <label>응급 연락처</label>
+                            <input type="text" id="medicalContact" placeholder="홍길동" value="홍길동">
+                        </div>
+                        <div class="form-group">
+                            <label>응급 전화번호</label>
+                            <input type="tel" id="medicalPhone" placeholder="+82-10-1234-5678" value="+82-10-1234-5678">
+                        </div>
+                    `;
+                    break;
+
+                case 0x08: // 위치
+                    form.innerHTML = `
+                        <div class="form-group">
+                            <label>장소 이름</label>
+                            <input type="text" id="locationName" placeholder="서울시청" value="서울시청">
+                        </div>
+                        <div class="form-group">
+                            <label>위도</label>
+                            <input type="number" step="0.0001" id="locationLat" placeholder="37.5665" value="37.5665">
+                        </div>
+                        <div class="form-group">
+                            <label>경도</label>
+                            <input type="number" step="0.0001" id="locationLng" placeholder="126.9780" value="126.9780">
+                        </div>
+                        <div class="form-group">
+                            <label>Plus Code</label>
+                            <input type="text" id="locationPlus" placeholder="8Q98MXRH+2V" value="8Q98MXRH+2V">
+                        </div>
+                    `;
+                    break;
+
+                default:
+                    form.innerHTML = `
+                        <div class="form-group">
+                            <label>JSON 데이터</label>
+                            <textarea id="inputJson" placeholder='{"key": "value"}'>{"test": "data"}</textarea>
+                        </div>
+                    `;
+            }
+        }
+
+        // WIA 생성
+        function generateWIA() {
+            try {
+                const typeId = parseInt(document.getElementById('dataType').value);
+                const data = collectData(typeId);
+
+                console.log('🎨 생성 시작:', { typeId, data });
+
+                const result = multiFormat.generate(typeId, data, 'complex', 'high');
+
+                // 통계 업데이트
+                document.getElementById('stat-usage').textContent = result.usage;
+
+                // 정보 표시
+                document.getElementById('generatorInfo').innerHTML = `
+                    <div class="info-box">
+                        <strong>✅ 생성 완료!</strong><br>
+                        타입: ${result.typeName}<br>
+                        크기: ${result.dataSize} / ${result.capacity} bytes<br>
+                        사용률: ${result.usage}
+                    </div>
+                `;
+
+                // 자동 디코딩
+                setTimeout(() => decodeWIA(), 500);
+            } catch (error) {
+                alert('오류: ' + error.message);
+                console.error(error);
+            }
+        }
+
+        // 데이터 수집
+        function collectData(typeId) {
+            switch (typeId) {
+                case 0x01: // 텍스트
+                    return document.getElementById('inputText').value;
+
+                case 0x11: // URL
+                    return document.getElementById('inputUrl').value;
+
+                case 0x04: // vCard
+                    return {
+                        name: document.getElementById('vcardName').value,
+                        phone: document.getElementById('vcardPhone').value,
+                        email: document.getElementById('vcardEmail').value,
+                        org: document.getElementById('vcardOrg').value,
+                        title: document.getElementById('vcardTitle').value
+                    };
+
+                case 0x03: // WiFi
+                    return {
+                        ssid: document.getElementById('wifiSsid').value,
+                        password: document.getElementById('wifiPassword').value,
+                        security: document.getElementById('wifiSecurity').value
+                    };
+
+                case 0x02: // SMS
+                    return {
+                        phone: document.getElementById('smsPhone').value,
+                        message: document.getElementById('smsMessage').value
+                    };
+
+                case 0x12: // 이메일
+                    return {
+                        to: document.getElementById('emailTo').value,
+                        subject: document.getElementById('emailSubject').value,
+                        body: document.getElementById('emailBody').value
+                    };
+
+                case 0x07: // 의료 정보
+                    return {
+                        bloodType: document.getElementById('medicalBlood').value,
+                        allergies: document.getElementById('medicalAllergies').value.split(',').map(s => s.trim()),
+                        emergencyContact: document.getElementById('medicalContact').value,
+                        emergencyPhone: document.getElementById('medicalPhone').value
+                    };
+
+                case 0x08: // 위치
+                    return {
+                        name: document.getElementById('locationName').value,
+                        latitude: parseFloat(document.getElementById('locationLat').value),
+                        longitude: parseFloat(document.getElementById('locationLng').value),
+                        plusCode: document.getElementById('locationPlus').value
+                    };
+
+                default:
+                    return JSON.parse(document.getElementById('inputJson').value);
+            }
+        }
+
+        // WIA 디코딩
+        async function decodeWIA() {
+            try {
+                const canvas = document.getElementById('generatorCanvas');
+                const result = await multiFormat.decode(canvas, true);
+
+                console.log('🔍 디코딩 결과:', result);
+
+                // 신뢰도 업데이트
+                document.getElementById('stat-reliability').textContent = result.reliability;
+
+                // 결과 렌더링
+                const resultDiv = document.getElementById('result');
+                WIARenderer.render(result, resultDiv);
+
+            } catch (error) {
+                alert('디코딩 오류: ' + error.message);
+                console.error(error);
+            }
+        }
+
+        // 예제 로드
+        function loadExample(type) {
+            switch (type) {
+                case 'text':
+                    document.getElementById('dataType').value = '0x01';
+                    updateDataForm();
+                    document.getElementById('inputText').value = '안녕하세요! WIA Neural Code입니다. 🚀';
+                    break;
+
+                case 'url':
+                    document.getElementById('dataType').value = '0x11';
+                    updateDataForm();
+                    document.getElementById('inputUrl').value = 'https://github.com/WIA-Official/test';
+                    break;
+
+                case 'vcard':
+                    document.getElementById('dataType').value = '0x04';
+                    updateDataForm();
+                    break;
+
+                case 'wifi':
+                    document.getElementById('dataType').value = '0x03';
+                    updateDataForm();
+                    break;
+
+                case 'sms':
+                    document.getElementById('dataType').value = '0x02';
+                    updateDataForm();
+                    break;
+
+                case 'email':
+                    document.getElementById('dataType').value = '0x12';
+                    updateDataForm();
+                    break;
+
+                case 'medical':
+                    document.getElementById('dataType').value = '0x07';
+                    updateDataForm();
+                    break;
+
+                case 'location':
+                    document.getElementById('dataType').value = '0x08';
+                    updateDataForm();
+                    break;
+            }
+
+            // 자동 생성
+            generateWIA();
+        }
+    </script>
+</body>
+</html>
