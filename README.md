@@ -19,6 +19,11 @@ WIA Neural Code는 전통적인 QR 코드의 **격자 패턴**을 **아름다운
 - 🚨 **99.9% 감지율**: 생명을 구하는 신뢰성! (CRC32 + Redundancy + ECC)
 - 🎁 **27+ 데이터 타입**: 텍스트부터 이미지, HTML, 의료정보까지 모든 것을 담는다!
 - 🧠 **Human Proof 기본 내장**: "기술이 인간을 보호해야해" - 생명 패턴 기반 봇 차단
+- ♿ **Accessibility 기본 내장**: TTS, 오디오/진동 피드백, 스크린 리더, 고대비/큰 텍스트
+- 🚨 **Emergency Mode**: 8가지 긴급 타입 (의료, 재난, 구조, 화재 등) - GPS, 오프라인 저장
+- 🔒 **Privacy Protection**: 암호화, 익명화, PII 자동 감지/마스킹, 안전한 삭제
+- 📡 **Offline-First**: 인터넷 없이 100% 작동 - 재난/오지에서도 생명을 구한다
+- ⏰ **100년 타임캡슐**: 미래 호환성 보장 - 종이 인쇄로 100년 이상 보존
 
 ### 🌐 지원하는 데이터 타입
 
@@ -73,18 +78,25 @@ WIA Neural Code는 전통적인 QR 코드의 **격자 패턴**을 **아름다운
 ```
 /home/user/test/
 ├── assets/js/
-│   ├── wia-engine-BEAUTIFUL-QR.js       ← Phase 1 Generator (56 neurons)
-│   ├── wia-neural-decoder.js            ← Phase 1 Decoder
-│   ├── wia-engine-100KB.js              ← Phase 4 Generator (504 neurons) 🏔️
-│   ├── wia-neural-decoder-100KB.js      ← Phase 4 Decoder 🏔️
-│   ├── wia-data-types.js                ← 데이터 타입 정의 (27+) 🎁
-│   ├── wia-multi-format.js              ← 멀티포맷 시스템 🌐
-│   └── wia-human-proof.js               ← Human Proof System 🧠 NEW!
-├── test-100KB.html                       ← Phase 4 테스트 페이지
-├── test-multi-format.html                ← 멀티포맷 테스트 페이지 ⭐
-├── test-human-proof.html                 ← Human Proof 테스트 🧠 NEW!
-├── WIA-NEURAL-CODE-COMPLETE-GUIDE.md    ← 완전 가이드
-├── DATA-FORMATS.md                       ← 데이터 포맷 문서 📋
+│   ├── 🎨 Core Engine
+│   │   ├── wia-engine-BEAUTIFUL-QR.js       ← Phase 1 (56 neurons)
+│   │   ├── wia-neural-decoder.js            ← Phase 1 Decoder
+│   │   ├── wia-engine-100KB.js              ← Phase 4 (504 neurons)
+│   │   └── wia-neural-decoder-100KB.js      ← Phase 4 Decoder
+│   ├── 🎁 Multi-Format
+│   │   ├── wia-data-types.js                ← 27+ data types
+│   │   └── wia-multi-format.js              ← Universal handler
+│   └── 🧠 Human Protection (기본 내장!)
+│       ├── wia-human-proof.js               ← Bot protection
+│       ├── wia-accessibility.js             ← Universal design
+│       ├── wia-emergency.js                 ← Life-saving
+│       └── wia-privacy.js                   ← Data protection
+├── test-100KB.html                       ← Phase 4 테스트
+├── test-multi-format.html                ← Multi-format 테스트
+├── test-human-proof.html                 ← Human Proof 테스트
+├── WIA-NEURAL-CODE-COMPLETE-GUIDE.md    ← 기술 가이드
+├── DATA-FORMATS.md                       ← 데이터 포맷 문서
+├── WIA-COMPLETE-SYSTEM.md                ← 전체 시스템 ⭐ NEW!
 ├── README.md                             ← 이 문서
 └── testsource                            ← Solidity 예제
 ```
