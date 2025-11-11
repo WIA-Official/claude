@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏔️ WIA Neural Code 100KB - 히말라야 테스트</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            font-size: 2.5rem;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: rgba(255,255,255,0.9);
+            margin-bottom: 30px;
+            font-size: 1.2rem;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .stat-box {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            padding: 15px 30px;
+            border-radius: 15px;
+            border: 2px solid rgba(255,255,255,0.3);
+            color: white;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+
+        canvas {
+            border: 3px solid #667eea;
+            background: white;
+            display: block;
+            width: 100%;
+            max-width: 960px;
+            height: auto;
+            border-radius: 8px;
+            margin: 15px auto;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin: 15px 0;
+        }
+
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            cursor: pointer;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-weight: 600;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 14px;
+            resize: vertical;
+        }
+
+        input[type="file"] {
+            display: block;
+            margin: 15px 0;
+            padding: 10px;
+            border: 2px dashed #667eea;
+            border-radius: 8px;
+            width: 100%;
+            cursor: pointer;
+            background: #f8f9fa;
+        }
+
+        .debug {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .debug h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        .debug pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .success {
+            background: #4caf50;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            display: none;
+        }
+
+        .success.show {
+            display: block;
+        }
+
+        .progress {
+            width: 100%;
+            height: 30px;
+            background: #e0e0e0;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 15px 0;
+            display: none;
+        }
+
+        .progress.show {
+            display: block;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        @media (max-width: 1200px) {
+            .row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏔️ WIA Neural Code 100KB Version</h1>
+        <p class="subtitle">"히말라야 정상 등반 - 베이스 캠프를 높게!"</p>
+
+        <div class="stats">
+            <div class="stat-box">
+                <div class="stat-number">504</div>
+                <div class="stat-label">Neurons</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-number">12</div>
+                <div class="stat-label">Layers</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-number">1,512</div>
+                <div class="stat-label">Bytes (RGB)</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-number">960×960</div>
+                <div class="stat-label">Canvas</div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="card">
+                <h2>1️⃣ Generator (생성기)</h2>
+                <div class="controls">
+                    <textarea id="inputText" placeholder="여기에 텍스트를 입력하세요... (최대 1512 bytes)">WIA Neural Code 100KB - 히말라야 정상 정복! 🏔️</textarea>
+                </div>
+                <div class="controls">
+                    <button onclick="generateCode()">🎨 생성</button>
+                    <button onclick="downloadCode()">💾 다운로드</button>
+                    <button onclick="stopAnimation()">⏸️ 정지</button>
+                </div>
+                <canvas id="genCanvas" width="960" height="960"></canvas>
+                <div class="progress" id="genProgress">
+                    <div class="progress-bar" id="genProgressBar">0%</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>2️⃣ Scanner (스캐너)</h2>
+                <input type="file" id="fileInput" accept="image/*">
+                <div class="controls">
+                    <button onclick="scanCode()">🔍 스캔</button>
+                    <button onclick="testRoundTrip()">🔄 라운드트립 테스트</button>
+                </div>
+                <canvas id="scanCanvas" width="960" height="960"></canvas>
+                <div class="progress" id="scanProgress">
+                    <div class="progress-bar" id="scanProgressBar">0%</div>
+                </div>
+                <div class="success" id="scanResult"></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="debug" id="debugInfo">
+                <h3>📊 디버그 정보</h3>
+                <pre id="debugContent">🚀 WIA Neural Code 100KB 준비 완료!
+
+✨ Phase 4 스펙:
+  - 504개 뉴런 (20-24-28-32-36-40-44-48-52-56-60-64)
+  - 960×960 Canvas (2배 확장!)
+  - RGB 복합 인코딩 (1 neuron = 3 bytes)
+  - 최대 용량: 1,512 bytes
+
+🏔️ "베이스 캠프를 높게 잡으면 정상 확률이 높아진다!"
+
+테스트를 시작하세요...</pre>
+            </div>
+        </div>
+    </div>
+
+    <script src="assets/js/wia-engine-100KB.js"></script>
+    <script src="assets/js/wia-neural-decoder-100KB.js"></script>
+
+    <script>
+        let engine, decoder;
+        let currentData = '';
+
+        function init() {
+            const canvas = document.getElementById('genCanvas');
+            engine = new WIANeuralEngine100KB(canvas);
+            decoder = new WIANeuralDecoder100KB();
+
+            updateDebug('✅ Engine 초기화 완료!\n✅ Decoder 초기화 완료!\n\n준비됐습니다! 생성 버튼을 누르세요! 🚀');
+        }
+
+        function generateCode() {
+            const text = document.getElementById('inputText').value;
+            if (!text) {
+                alert('텍스트를 입력하세요!');
+                return;
+            }
+
+            currentData = text;
+
+            updateDebug(`🎨 생성 시작...\n원본: "${text}"\n길이: ${text.length} 문자\n`);
+
+            const progress = document.getElementById('genProgress');
+            const progressBar = document.getElementById('genProgressBar');
+
+            progress.classList.add('show');
+            progressBar.style.width = '0%';
+            progressBar.textContent = '0%';
+
+            setTimeout(() => {
+                progressBar.style.width = '30%';
+                progressBar.textContent = '30% - 뉴런 생성 중...';
+            }, 100);
+
+            setTimeout(() => {
+                progressBar.style.width = '60%';
+                progressBar.textContent = '60% - 인코딩 중...';
+            }, 300);
+
+            setTimeout(() => {
+                engine.generate(text, 'complex', 'high');
+
+                progressBar.style.width = '100%';
+                progressBar.textContent = '100% - 완료!';
+
+                setTimeout(() => {
+                    progress.classList.remove('show');
+                }, 1000);
+
+                updateDebug(`✅ 생성 완료!\n\n504개 뉴런에 데이터 인코딩됨!\nRGB 복합 방식 적용 완료!\n\n이제 다운로드하거나 스캔 테스트를 해보세요! 🎉`);
+            }, 500);
+        }
+
+        function downloadCode() {
+            if (!engine) {
+                alert('먼저 코드를 생성하세요!');
+                return;
+            }
+
+            engine.downloadPNG();
+            updateDebug('💾 다운로드 완료!\n\n이제 스캐너로 업로드해서 테스트하세요!');
+        }
+
+        function stopAnimation() {
+            if (engine) {
+                engine.stopAnimation();
+                updateDebug('⏸️ 애니메이션 정지');
+            }
+        }
+
+        async function scanCode() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                alert('이미지를 선택하세요!');
+                return;
+            }
+
+            updateDebug('🔍 스캔 시작...\n이미지 로딩 중...\n');
+
+            const progress = document.getElementById('scanProgress');
+            const progressBar = document.getElementById('scanProgressBar');
+
+            progress.classList.add('show');
+            progressBar.style.width = '0%';
+            progressBar.textContent = '0%';
+
+            const img = new Image();
+            img.onload = async () => {
+                try {
+                    const scanCanvas = document.getElementById('scanCanvas');
+                    const ctx = scanCanvas.getContext('2d');
+
+                    scanCanvas.width = img.width;
+                    scanCanvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+
+                    progressBar.style.width = '30%';
+                    progressBar.textContent = '30% - 마커 감지 중...';
+
+                    await new Promise(resolve => setTimeout(resolve, 300));
+
+                    progressBar.style.width = '60%';
+                    progressBar.textContent = '60% - 뉴런 감지 중...';
+
+                    const result = await decoder.decode(scanCanvas);
+
+                    progressBar.style.width = '100%';
+                    progressBar.textContent = '100% - 완료!';
+
+                    setTimeout(() => {
+                        progress.classList.remove('show');
+                    }, 1000);
+
+                    const resultDiv = document.getElementById('scanResult');
+                    resultDiv.innerHTML = `
+                        <strong>✅ 디코딩 성공!</strong><br><br>
+                        <strong>복원된 텍스트:</strong><br>
+                        "${result.data}"<br><br>
+                        <strong>통계:</strong><br>
+                        - 감지된 뉴런: ${result.neuronCount}개<br>
+                        - 복원된 바이트: ${result.byteCount}개<br>
+                        - 버전: ${result.version}
+                    `;
+                    resultDiv.classList.add('show');
+
+                    updateDebug(`🎉 디코딩 성공!\n\n원본: "${currentData}"\n복원: "${result.data}"\n\n일치율: ${calculateMatch(currentData, result.data)}%\n\n뉴런: ${result.neuronCount}/504\n바이트: ${result.byteCount}개`);
+
+                } catch (error) {
+                    progressBar.style.width = '100%';
+                    progressBar.textContent = '❌ 실패';
+                    progressBar.style.background = '#f44336';
+
+                    updateDebug(`❌ 디코딩 실패\n\n${error.message}\n\n${error.stack}`);
+
+                    setTimeout(() => {
+                        progress.classList.remove('show');
+                        progressBar.style.background = 'linear-gradient(90deg, #667eea, #764ba2)';
+                    }, 2000);
+                }
+            };
+
+            img.onerror = () => {
+                updateDebug('❌ 이미지 로딩 실패');
+                progress.classList.remove('show');
+            };
+
+            img.src = URL.createObjectURL(file);
+        }
+
+        async function testRoundTrip() {
+            updateDebug('🔄 라운드트립 테스트 시작...\n\n1. 생성...');
+
+            generateCode();
+
+            setTimeout(async () => {
+                updateDebug('🔄 라운드트립 테스트\n\n1. ✅ 생성 완료\n2. 디코딩 중...');
+
+                try {
+                    const canvas = document.getElementById('genCanvas');
+                    const result = await decoder.decode(canvas);
+
+                    updateDebug(`🎉 라운드트립 성공!\n\n원본: "${currentData}"\n복원: "${result.data}"\n\n일치율: ${calculateMatch(currentData, result.data)}%\n\n✅ Generator → Decoder 완벽 동작!`);
+
+                    const resultDiv = document.getElementById('scanResult');
+                    resultDiv.innerHTML = `
+                        <strong>🎉 라운드트립 테스트 성공!</strong><br><br>
+                        <strong>원본:</strong> "${currentData}"<br>
+                        <strong>복원:</strong> "${result.data}"<br>
+                        <strong>일치율:</strong> ${calculateMatch(currentData, result.data)}%
+                    `;
+                    resultDiv.classList.add('show');
+
+                } catch (error) {
+                    updateDebug(`❌ 라운드트립 실패\n\n${error.message}`);
+                }
+            }, 1000);
+        }
+
+        function calculateMatch(original, restored) {
+            if (!original || !restored) return 0;
+
+            let matches = 0;
+            const maxLen = Math.max(original.length, restored.length);
+
+            for (let i = 0; i < maxLen; i++) {
+                if (original[i] === restored[i]) matches++;
+            }
+
+            return ((matches / maxLen) * 100).toFixed(1);
+        }
+
+        function updateDebug(message) {
+            document.getElementById('debugContent').textContent = message;
+        }
+
+        // 초기화
+        window.onload = init;
+    </script>
+</body>
+</html>

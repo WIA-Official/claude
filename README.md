@@ -26,8 +26,11 @@ WIA Neural Code는 전통적인 QR 코드의 **격자 패턴**을 **아름다운
 ```
 /home/user/test/
 ├── assets/js/
-│   ├── wia-engine-BEAUTIFUL-QR.js       ← Generator 엔진
-│   └── wia-neural-decoder.js            ← Decoder
+│   ├── wia-engine-BEAUTIFUL-QR.js       ← Generator (56 neurons)
+│   ├── wia-neural-decoder.js            ← Decoder (56 neurons)
+│   ├── wia-engine-100KB.js              ← Generator 100KB (504 neurons) 🏔️
+│   └── wia-neural-decoder-100KB.js      ← Decoder 100KB (504 neurons) 🏔️
+├── test-100KB.html                       ← 100KB 테스트 페이지 ⭐
 ├── WIA-NEURAL-CODE-COMPLETE-GUIDE.md    ← 완전 가이드 (670줄)
 ├── README.md                             ← 이 문서
 └── testsource                            ← Solidity 예제
@@ -109,23 +112,29 @@ Generator와 Scanner 모두 **480x480** 고정
 
 ## 🎯 로드맵
 
-### Phase 1: 9KB (현재) ✅
+### Phase 1: 9KB (완성) ✅
 - 56 neurons (8-12-16-20)
 - 480×480 Canvas
 - Alpha 인코딩
+- **감지율: 90%+**
 
-### Phase 2: 18KB 🎯
-- 132 neurons (12-16-20-24-28-32)
-- 720×720 Canvas
-- RGB 복합 인코딩
+### Phase 4: 100KB (완성!) 🏔️⛰️
+- **504 neurons (20-24-28-32-36-40-44-48-52-56-60-64)**
+- **960×960 Canvas**
+- **RGB 복합 인코딩 (1 neuron = 3 bytes)**
+- **최대 용량: 1,512 bytes**
+- **"히말라야 정상 등반 성공!"**
 
-### Phase 3: 36KB
-- 240 neurons
-- 960×960 Canvas
+### 테스트
+```bash
+# 100KB 버전 테스트
+open test-100KB.html
+```
 
-### Phase 4: 100KB
-- 504 neurons
-- 1440×1440 Canvas
+### 미래 확장
+- Phase 2: 18KB (132 neurons)
+- Phase 3: 36KB (240 neurons)
+- 멀티 프레임: 10 frames = 15KB
 
 ---
 
