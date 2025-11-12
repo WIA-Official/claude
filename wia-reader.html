@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#667eea">
+    <meta name="description" content="WIA Neural Code Reader - 100년 후에도 존재할 수 있는 코드">
+
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="WIA Reader">
+
+    <title>📱 WIA Neural Code Reader</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* 헤더 */
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 15px 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 20px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .install-btn {
+            display: none;
+            padding: 8px 16px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .install-btn:hover {
+            background: #5568d3;
+        }
+
+        /* 메인 컨테이너 */
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 0 20px 80px 20px;
+        }
+
+        /* 카메라 뷰 */
+        .camera-container {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        #video {
+            width: 100%;
+            display: block;
+            background: #000;
+        }
+
+        #canvas {
+            display: none;
+        }
+
+        .camera-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+        }
+
+        .scan-frame {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 250px;
+            height: 250px;
+            border: 3px solid rgba(102, 126, 234, 0.8);
+            border-radius: 20px;
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+        }
+
+        .scan-corners {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            border: 4px solid #667eea;
+        }
+
+        .corner-tl {
+            top: -2px;
+            left: -2px;
+            border-right: none;
+            border-bottom: none;
+            border-radius: 20px 0 0 0;
+        }
+
+        .corner-tr {
+            top: -2px;
+            right: -2px;
+            border-left: none;
+            border-bottom: none;
+            border-radius: 0 20px 0 0;
+        }
+
+        .corner-bl {
+            bottom: -2px;
+            left: -2px;
+            border-right: none;
+            border-top: none;
+            border-radius: 0 0 0 20px;
+        }
+
+        .corner-br {
+            bottom: -2px;
+            right: -2px;
+            border-left: none;
+            border-top: none;
+            border-radius: 0 0 20px 0;
+        }
+
+        .scan-line {
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #667eea, transparent);
+            animation: scan 2s ease-in-out infinite;
+        }
+
+        @keyframes scan {
+            0%, 100% { top: 0; }
+            50% { top: 100%; }
+        }
+
+        .camera-status {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        /* 컨트롤 */
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            padding: 15px;
+            border: none;
+            border-radius: 15px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: white;
+            color: #667eea;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            backdrop-filter: blur(10px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* 결과 */
+        .result {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            display: none;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .result-type {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .result-reliability {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .result-content {
+            margin-bottom: 20px;
+        }
+
+        .result-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        /* 통계 */
+        .stats {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .stats h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 15px;
+            background: #f8f9ff;
+            border-radius: 10px;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #667eea;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+        }
+
+        /* 오프라인 표시 */
+        .offline-banner {
+            background: #ff9800;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            font-weight: bold;
+            display: none;
+        }
+
+        .offline-banner.show {
+            display: block;
+        }
+
+        /* PWA 설치 배너 */
+        .install-banner {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 20px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            display: none;
+        }
+
+        .install-banner.show {
+            display: block;
+        }
+
+        .install-banner h3 {
+            margin-bottom: 10px;
+            font-size: 20px;
+        }
+
+        .install-banner p {
+            margin-bottom: 15px;
+            opacity: 0.9;
+            line-height: 1.5;
+        }
+
+        .install-banner-btn {
+            background: white;
+            color: #667eea;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+        }
+
+        /* 로딩 */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 반응형 */
+        @media (max-width: 600px) {
+            .container {
+                padding: 0 15px 80px 15px;
+            }
+
+            .scan-frame {
+                width: 200px;
+                height: 200px;
+            }
+
+            .controls {
+                grid-template-columns: 1fr;
+            }
+
+            .result-actions {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="offline-banner" id="offlineBanner">
+        📡 오프라인 모드 - 인터넷 없이도 작동합니다!
+    </div>
+
+    <div class="header">
+        <div class="header-content">
+            <div class="logo">
+                <span>🧠</span>
+                <span>WIA Reader</span>
+            </div>
+            <button class="install-btn" id="installBtn">
+                📱 앱 설치
+            </button>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- PWA 설치 배너 -->
+        <div class="install-banner" id="installBanner">
+            <h3>📱 앱으로 설치하기</h3>
+            <p>홈 화면에 추가하면 앱처럼 사용할 수 있어요!<br>오프라인에서도 작동하며, 즉시 업데이트됩니다.</p>
+            <button class="install-banner-btn" id="installBannerBtn">
+                ✨ 홈 화면에 추가
+            </button>
+        </div>
+
+        <!-- 통계 -->
+        <div class="stats">
+            <h3>📊 스캔 통계</h3>
+            <div class="stat-grid">
+                <div class="stat-item">
+                    <span class="stat-value" id="totalScans">0</span>
+                    <span class="stat-label">총 스캔</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value" id="successScans">0</span>
+                    <span class="stat-label">성공</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value" id="successRate">0%</span>
+                    <span class="stat-label">성공률</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value" id="reliability">99.999%</span>
+                    <span class="stat-label">시스템 신뢰도</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 카메라 -->
+        <div class="camera-container">
+            <video id="video" autoplay playsinline></video>
+            <canvas id="canvas"></canvas>
+
+            <div class="camera-overlay">
+                <div class="scan-frame">
+                    <div class="scan-corners corner-tl"></div>
+                    <div class="scan-corners corner-tr"></div>
+                    <div class="scan-corners corner-bl"></div>
+                    <div class="scan-corners corner-br"></div>
+                    <div class="scan-line"></div>
+                </div>
+                <div class="camera-status" id="cameraStatus">
+                    📷 카메라 준비 중...
+                </div>
+            </div>
+        </div>
+
+        <!-- 컨트롤 -->
+        <div class="controls">
+            <button class="btn btn-primary" id="scanBtn">
+                <span>📸</span>
+                <span>스캔</span>
+            </button>
+            <button class="btn btn-secondary" id="uploadBtn">
+                <span>🖼️</span>
+                <span>이미지 선택</span>
+            </button>
+            <input type="file" id="fileInput" accept="image/*" style="display: none;">
+        </div>
+
+        <!-- 결과 -->
+        <div class="result" id="result">
+            <div class="result-header">
+                <div class="result-type" id="resultType">
+                    <span id="resultIcon">📄</span>
+                    <span id="resultTypeName">텍스트</span>
+                </div>
+                <div class="result-reliability" id="resultReliability">
+                    신뢰도: 99.9%
+                </div>
+            </div>
+
+            <div class="result-content" id="resultContent">
+                <!-- 결과 내용 -->
+            </div>
+
+            <div class="result-actions">
+                <button class="btn btn-primary" id="copyBtn">
+                    📋 복사
+                </button>
+                <button class="btn btn-secondary" id="shareBtn">
+                    🔗 공유
+                </button>
+            </div>
+        </div>
+
+        <!-- 로딩 -->
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <div style="color: white; font-weight: bold;">처리 중...</div>
+        </div>
+    </div>
+
+    <!-- WIA Core -->
+    <script src="assets/js/wia-data-types.js"></script>
+    <script src="assets/js/wia-engine-BEAUTIFUL-QR.js"></script>
+    <script src="assets/js/wia-engine-100KB.js"></script>
+    <script src="assets/js/wia-neural-decoder.js"></script>
+    <script src="assets/js/wia-neural-decoder-100KB.js"></script>
+    <script src="assets/js/wia-reed-solomon.js"></script>
+    <script src="assets/js/wia-multi-format.js"></script>
+    <script src="assets/js/wia-human-proof.js"></script>
+    <script src="assets/js/wia-accessibility.js"></script>
+
+    <script>
+        // PWA 리더 메인 스크립트
+        let videoStream = null;
+        let stats = {
+            total: 0,
+            success: 0
+        };
+
+        // Service Worker 등록
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js')
+                .then(reg => console.log('✅ Service Worker 등록 완료'))
+                .catch(err => console.error('❌ Service Worker 등록 실패:', err));
+        }
+
+        // PWA 설치
+        let deferredPrompt;
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('installBtn').style.display = 'block';
+            document.getElementById('installBanner').classList.add('show');
+        });
+
+        document.getElementById('installBtn').addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                console.log(`설치: ${outcome}`);
+                deferredPrompt = null;
+                document.getElementById('installBtn').style.display = 'none';
+                document.getElementById('installBanner').classList.remove('show');
+            }
+        });
+
+        document.getElementById('installBannerBtn').addEventListener('click', () => {
+            document.getElementById('installBtn').click();
+        });
+
+        // 오프라인 감지
+        window.addEventListener('online', () => {
+            document.getElementById('offlineBanner').classList.remove('show');
+        });
+
+        window.addEventListener('offline', () => {
+            document.getElementById('offlineBanner').classList.add('show');
+        });
+
+        // 카메라 시작
+        async function startCamera() {
+            try {
+                videoStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'environment', width: 1280, height: 720 }
+                });
+
+                const video = document.getElementById('video');
+                video.srcObject = videoStream;
+
+                document.getElementById('cameraStatus').textContent = '✅ 준비 완료 - 스캔 버튼을 누르세요';
+
+                console.log('✅ 카메라 시작');
+            } catch (error) {
+                console.error('❌ 카메라 오류:', error);
+                document.getElementById('cameraStatus').textContent = '❌ 카메라 권한 필요';
+                alert('카메라 권한이 필요합니다.');
+            }
+        }
+
+        // 페이지 로드 시 카메라 시작
+        window.addEventListener('load', () => {
+            startCamera();
+            loadStats();
+        });
+
+        // 스캔 버튼
+        document.getElementById('scanBtn').addEventListener('click', async () => {
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+
+            ctx.drawImage(video, 0, 0);
+
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('cameraStatus').textContent = '🔍 분석 중...';
+
+            try {
+                // WIA 디코딩 (Phase 4 시도 → Phase 1 fallback)
+                const multiFormat = new WIAMultiFormat(canvas, 4);
+                const result = await multiFormat.decode(canvas);
+
+                displayResult(result);
+                updateStats(true);
+
+                document.getElementById('cameraStatus').textContent = '✅ 스캔 성공!';
+            } catch (error) {
+                console.error('❌ 디코딩 실패:', error);
+                document.getElementById('cameraStatus').textContent = '❌ 인식 실패 - 다시 시도하세요';
+                updateStats(false);
+                alert('WIA 코드를 인식하지 못했습니다. 다시 시도해주세요.');
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        });
+
+        // 이미지 업로드
+        document.getElementById('uploadBtn').addEventListener('click', () => {
+            document.getElementById('fileInput').click();
+        });
+
+        document.getElementById('fileInput').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const img = new Image();
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+
+            img.onload = async () => {
+                canvas.width = img.width;
+                canvas.height = img.height;
+                ctx.drawImage(img, 0, 0);
+
+                document.getElementById('loading').style.display = 'block';
+
+                try {
+                    const multiFormat = new WIAMultiFormat(canvas, 4);
+                    const result = await multiFormat.decode(canvas);
+                    displayResult(result);
+                    updateStats(true);
+                } catch (error) {
+                    console.error('❌ 디코딩 실패:', error);
+                    updateStats(false);
+                    alert('WIA 코드를 인식하지 못했습니다.');
+                } finally {
+                    document.getElementById('loading').style.display = 'none';
+                }
+            };
+
+            img.src = URL.createObjectURL(file);
+        });
+
+        // 결과 표시
+        function displayResult(result) {
+            document.getElementById('resultIcon').textContent = result.typeIcon;
+            document.getElementById('resultTypeName').textContent = result.typeName;
+            document.getElementById('resultReliability').textContent = `신뢰도: ${result.reliability}`;
+
+            // 타입별 렌더링
+            const contentDiv = document.getElementById('resultContent');
+            contentDiv.innerHTML = renderData(result);
+
+            document.getElementById('result').style.display = 'block';
+
+            // 스크롤
+            document.getElementById('result').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // 데이터 렌더링
+        function renderData(result) {
+            // WIARenderer 사용
+            if (typeof WIARenderer !== 'undefined') {
+                const tempDiv = document.createElement('div');
+                WIARenderer.render(result, tempDiv);
+                return tempDiv.innerHTML;
+            }
+
+            // Fallback
+            return `<pre style="white-space: pre-wrap; word-wrap: break-word;">${JSON.stringify(result.data, null, 2)}</pre>`;
+        }
+
+        // 통계 업데이트
+        function updateStats(success) {
+            stats.total++;
+            if (success) stats.success++;
+
+            const rate = stats.total > 0 ? ((stats.success / stats.total) * 100).toFixed(1) : 0;
+
+            document.getElementById('totalScans').textContent = stats.total;
+            document.getElementById('successScans').textContent = stats.success;
+            document.getElementById('successRate').textContent = rate + '%';
+
+            saveStats();
+        }
+
+        // 통계 저장
+        function saveStats() {
+            localStorage.setItem('wia_stats', JSON.stringify(stats));
+        }
+
+        // 통계 로드
+        function loadStats() {
+            const saved = localStorage.getItem('wia_stats');
+            if (saved) {
+                stats = JSON.parse(saved);
+                const rate = stats.total > 0 ? ((stats.success / stats.total) * 100).toFixed(1) : 0;
+                document.getElementById('totalScans').textContent = stats.total;
+                document.getElementById('successScans').textContent = stats.success;
+                document.getElementById('successRate').textContent = rate + '%';
+            }
+        }
+
+        // 복사
+        document.getElementById('copyBtn').addEventListener('click', () => {
+            const text = document.getElementById('resultContent').textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                alert('📋 복사되었습니다!');
+            });
+        });
+
+        // 공유
+        document.getElementById('shareBtn').addEventListener('click', async () => {
+            const text = document.getElementById('resultContent').textContent;
+
+            if (navigator.share) {
+                try {
+                    await navigator.share({
+                        title: 'WIA Neural Code',
+                        text: text
+                    });
+                } catch (error) {
+                    console.log('공유 취소');
+                }
+            } else {
+                alert('이 브라우저는 공유 기능을 지원하지 않습니다.');
+            }
+        });
+    </script>
+</body>
+</html>
