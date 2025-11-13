@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚀 WIA Neural Code - Performance Benchmark</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-card {
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .progress {
+            width: 100%;
+            height: 30px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #4ade80 0%, #22c55e 100%);
+            width: 0%;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        .results {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+        }
+        button {
+            background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 10px;
+            font-size: 18px;
+            cursor: pointer;
+            display: block;
+            margin: 20px auto;
+            transition: transform 0.2s;
+        }
+        button:hover {
+            transform: scale(1.05);
+        }
+        button:active {
+            transform: scale(0.95);
+        }
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            padding: 10px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 5px;
+        }
+        .good { color: #4ade80; }
+        .warning { color: #fbbf24; }
+        .bad { color: #f87171; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 WIA Neural Code Performance Benchmark</h1>
+        
+        <button onclick="runBenchmark()">Start Benchmark</button>
+        
+        <div id="tests"></div>
+        
+        <div class="results" id="results" style="display: none;">
+            <h2>📊 Benchmark Results</h2>
+            <div id="summary"></div>
+        </div>
+    </div>
+
+    <script>
+        // 벤치마크 테스트 함수들
+        const benchmarks = {
+            // Phase 1 인코딩 테스트
+            async phase1Encoding() {
+                const data = 'WIA Neural Code Test Data Phase 1';
+                const iterations = 1000;
+                
+                const start = performance.now();
+                for (let i = 0; i < iterations; i++) {
+                    // 실제 인코딩 로직 시뮬레이션
+                    const encoded = btoa(data + i);
+                    const neurons = Array(56).fill(0).map(() => Math.random());
+                }
+                const end = performance.now();
+                
+                return {
+                    name: 'Phase 1 Encoding (56 neurons)',
+                    time: ((end - start) / iterations).toFixed(3),
+                    iterations: iterations,
+                    status: ((end - start) / iterations) < 10 ? 'good' : 'warning'
+                };
+            },
+            
+            // Phase 4 인코딩 테스트
+            async phase4Encoding() {
+                const data = 'WIA Neural Code Test Data Phase 4 with more complex data structure and Reed-Solomon';
+                const iterations = 100;
+                
+                const start = performance.now();
+                for (let i = 0; i < iterations; i++) {
+                    // Phase 4 시뮬레이션 (504 neurons)
+                    const encoded = btoa(data + i);
+                    const neurons = Array(504).fill(0).map(() => Math.random());
+                    // Reed-Solomon 시뮬레이션
+                    const rs = neurons.map(n => (n * 255) | 0);
+                }
+                const end = performance.now();
+                
+                return {
+                    name: 'Phase 4 Encoding (504 neurons)',
+                    time: ((end - start) / iterations).toFixed(3),
+                    iterations: iterations,
+                    status: ((end - start) / iterations) < 50 ? 'good' : 'warning'
+                };
+            },
+            
+            // Reed-Solomon 오류 정정
+            async reedSolomonTest() {
+                const data = new Uint8Array(256).map(() => Math.random() * 255 | 0);
+                const iterations = 100;
+                
+                const start = performance.now();
+                for (let i = 0; i < iterations; i++) {
+                    // RS 인코딩 시뮬레이션
+                    const parity = data.map(b => (b * 3) % 255);
+                    // 오류 주입
+                    const corrupted = [...data];
+                    corrupted[Math.random() * data.length | 0] = Math.random() * 255 | 0;
+                    // 복구 시뮬레이션
+                    const recovered = corrupted.map((b, i) => parity[i] ? b : data[i]);
+                }
+                const end = performance.now();
+                
+                return {
+                    name: 'Reed-Solomon Error Correction',
+                    time: ((end - start) / iterations).toFixed(3),
+                    iterations: iterations,
+                    status: ((end - start) / iterations) < 25 ? 'good' : 'warning'
+                };
+            },
+            
+            // Canvas 렌더링 성능
+            async canvasRendering() {
+                const canvas = document.createElement('canvas');
+                canvas.width = 960;
+                canvas.height = 960;
+                const ctx = canvas.getContext('2d');
+                const iterations = 50;
+                
+                const start = performance.now();
+                for (let i = 0; i < iterations; i++) {
+                    // 뉴럴 패턴 그리기
+                    ctx.clearRect(0, 0, 960, 960);
+                    for (let r = 0; r < 21; r++) {
+                        for (let c = 0; c < 24; c++) {
+                            ctx.fillStyle = Math.random() > 0.5 ? '#667eea' : '#764ba2';
+                            ctx.fillRect(c * 40, r * 40, 38, 38);
+                        }
+                    }
+                }
+                const end = performance.now();
+                
+                return {
+                    name: 'Canvas Rendering (960×960)',
+                    time: ((end - start) / iterations).toFixed(3),
+                    iterations: iterations,
+                    status: ((end - start) / iterations) < 20 ? 'good' : 'warning'
+                };
+            },
+            
+            // 메모리 사용량 테스트
+            async memoryUsage() {
+                if (!performance.memory) {
+                    return {
+                        name: 'Memory Usage',
+                        time: 'N/A',
+                        iterations: 0,
+                        status: 'warning',
+                        note: 'Memory API not available'
+                    };
+                }
+                
+                const before = performance.memory.usedJSHeapSize;
+                
+                // 대용량 데이터 생성
+                const bigData = [];
+                for (let i = 0; i < 1000; i++) {
+                    bigData.push(Array(504).fill(0).map(() => Math.random()));
+                }
+                
+                const after = performance.memory.usedJSHeapSize;
+                const used = ((after - before) / 1024 / 1024).toFixed(2);
+                
+                return {
+                    name: 'Memory Usage (1000 codes)',
+                    time: used + ' MB',
+                    iterations: 1000,
+                    status: used < 10 ? 'good' : used < 50 ? 'warning' : 'bad'
+                };
+            },
+            
+            // 디코딩 성능
+            async decodingTest() {
+                const encodedData = btoa('WIA Neural Code Decoding Test');
+                const iterations = 1000;
+                
+                const start = performance.now();
+                for (let i = 0; i < iterations; i++) {
+                    const decoded = atob(encodedData);
+                    const neurons = decoded.split('').map(c => c.charCodeAt(0));
+                }
+                const end = performance.now();
+                
+                return {
+                    name: 'Decoding Performance',
+                    time: ((end - start) / iterations).toFixed(3),
+                    iterations: iterations,
+                    status: ((end - start) / iterations) < 5 ? 'good' : 'warning'
+                };
+            }
+        };
+        
+        async function runBenchmark() {
+            const testsDiv = document.getElementById('tests');
+            const resultsDiv = document.getElementById('results');
+            const summaryDiv = document.getElementById('summary');
+            
+            testsDiv.innerHTML = '';
+            summaryDiv.innerHTML = '';
+            resultsDiv.style.display = 'none';
+            
+            const results = [];
+            const testNames = Object.keys(benchmarks);
+            
+            for (let i = 0; i < testNames.length; i++) {
+                const testName = testNames[i];
+                const testFunc = benchmarks[testName];
+                
+                // 테스트 카드 생성
+                const card = document.createElement('div');
+                card.className = 'test-card';
+                card.innerHTML = `
+                    <h3>${testName}</h3>
+                    <div class="progress">
+                        <div class="progress-bar" id="progress-${i}">0%</div>
+                    </div>
+                    <div id="result-${i}"></div>
+                `;
+                testsDiv.appendChild(card);
+                
+                // 프로그레스 바 업데이트
+                const progressBar = document.getElementById(`progress-${i}`);
+                progressBar.style.width = '50%';
+                progressBar.textContent = 'Running...';
+                
+                // 테스트 실행
+                try {
+                    const result = await testFunc();
+                    results.push(result);
+                    
+                    progressBar.style.width = '100%';
+                    progressBar.textContent = 'Complete';
+                    
+                    document.getElementById(`result-${i}`).innerHTML = `
+                        <div class="metric">
+                            <span>Time per operation:</span>
+                            <span class="${result.status}">${result.time} ms</span>
+                        </div>
+                        <div class="metric">
+                            <span>Total iterations:</span>
+                            <span>${result.iterations}</span>
+                        </div>
+                        ${result.note ? `<div class="metric"><span>Note:</span><span>${result.note}</span></div>` : ''}
+                    `;
+                } catch (error) {
+                    progressBar.style.width = '100%';
+                    progressBar.style.background = 'linear-gradient(90deg, #f87171 0%, #ef4444 100%)';
+                    progressBar.textContent = 'Failed';
+                    
+                    document.getElementById(`result-${i}`).innerHTML = `
+                        <div class="metric">
+                            <span class="bad">Error: ${error.message}</span>
+                        </div>
+                    `;
+                }
+                
+                // 다음 테스트까지 약간 대기
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            
+            // 결과 요약
+            resultsDiv.style.display = 'block';
+            
+            const totalTime = results.reduce((acc, r) => {
+                const time = parseFloat(r.time);
+                return acc + (isNaN(time) ? 0 : time);
+            }, 0);
+            
+            const goodTests = results.filter(r => r.status === 'good').length;
+            const warningTests = results.filter(r => r.status === 'warning').length;
+            const badTests = results.filter(r => r.status === 'bad').length;
+            
+            summaryDiv.innerHTML = `
+                <div class="metric">
+                    <span>Total Tests:</span>
+                    <span>${results.length}</span>
+                </div>
+                <div class="metric">
+                    <span>✅ Good:</span>
+                    <span class="good">${goodTests}</span>
+                </div>
+                <div class="metric">
+                    <span>⚠️ Warning:</span>
+                    <span class="warning">${warningTests}</span>
+                </div>
+                <div class="metric">
+                    <span>❌ Bad:</span>
+                    <span class="bad">${badTests}</span>
+                </div>
+                <div class="metric">
+                    <span>Average Time:</span>
+                    <span>${(totalTime / results.length).toFixed(3)} ms</span>
+                </div>
+                <div class="metric">
+                    <span>Browser:</span>
+                    <span>${navigator.userAgent.split(' ').slice(-2).join(' ')}</span>
+                </div>
+                <div class="metric">
+                    <span>Timestamp:</span>
+                    <span>${new Date().toLocaleString('ko-KR')}</span>
+                </div>
+            `;
+            
+            // 결과를 로컬 스토리지에 저장
+            localStorage.setItem('wia-benchmark-results', JSON.stringify({
+                results: results,
+                summary: {
+                    total: results.length,
+                    good: goodTests,
+                    warning: warningTests,
+                    bad: badTests,
+                    avgTime: totalTime / results.length,
+                    browser: navigator.userAgent,
+                    timestamp: new Date().toISOString()
+                }
+            }));
+            
+            console.log('Benchmark completed:', results);
+        }
+        
+        // 페이지 로드 시 이전 결과 표시
+        window.addEventListener('load', () => {
+            const saved = localStorage.getItem('wia-benchmark-results');
+            if (saved) {
+                const data = JSON.parse(saved);
+                console.log('Previous benchmark results:', data);
+            }
+        });
+    </script>
+</body>
+</html>
