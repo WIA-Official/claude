@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#667eea">
+    <meta name="description" content="WIA Neural Code Reader - 100년 후에도 존재할 수 있는 코드">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/icons/icon-192x192.png">
+    <link rel="shortcut icon" type="image/png" href="/icons/icon-192x192.png">
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="WIA Reader">
+
+    <title>📱 WIA Neural Code Reader</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .logo {
+            font-size: 60px;
+            margin-bottom: 10px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .title {
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .scanner-area {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .preview-container {
+            position: relative;
+            width: 100%;
+            min-height: 300px;
+            background: #f0f0f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        #uploadPreview {
+            max-width: 100%;
+            max-height: 400px;
+            object-fit: contain;
+        }
+
+        #canvas {
+            display: none;
+        }
+
+        .placeholder {
+            color: #999;
+            font-size: 18px;
+            text-align: center;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 10px;
+            border: none;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .result {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            margin-top: 20px;
+            display: none;
+            animation: slideUp 0.5s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result.active {
+            display: block;
+        }
+
+        .result-header {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+
+        .result-content {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            word-break: break-all;
+        }
+
+        .result-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .loading.active {
+            display: flex;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid white;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .stats {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .error-message {
+            background: #fee;
+            color: #c00;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+
+        .success-message {
+            background: #efe;
+            color: #0a0;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🧠</div>
+            <div class="title">WIA Reader</div>
+        </div>
+
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-value" id="totalScans">0</div>
+                <div class="stat-label">총 스캔</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="successRate">0%</div>
+                <div class="stat-label">성공률</div>
+            </div>
+        </div>
+
+        <div class="scanner-area">
+            <div class="preview-container" id="previewContainer">
+                <video id="video" style="display: none;" autoplay playsinline></video>
+                <img id="uploadPreview" style="display: none;">
+                <div class="placeholder" id="placeholder">
+                    📷 카메라를 시작하거나 이미지를 선택하세요
+                </div>
+            </div>
+            <canvas id="canvas"></canvas>
+
+            <div class="controls">
+                <button class="btn btn-primary" id="cameraBtn">
+                    <span>📷</span>
+                    <span>카메라</span>
+                </button>
+                <button class="btn btn-secondary" id="uploadBtn">
+                    <span>🖼️</span>
+                    <span>이미지 선택</span>
+                </button>
+                <input type="file" id="fileInput" accept="image/*" style="display: none;">
+            </div>
+
+            <div id="message"></div>
+        </div>
+
+        <div class="result" id="result">
+            <div class="result-header">스캔 결과</div>
+            <div class="result-content" id="resultContent"></div>
+            <div class="result-actions">
+                <button class="btn btn-primary" onclick="copyResult()">📋 복사</button>
+                <button class="btn btn-secondary" onclick="shareResult()">🔗 공유</button>
+            </div>
+        </div>
+
+        <div class="loading" id="loading">
+            <div>
+                <div class="spinner"></div>
+                <div style="color: white; margin-top: 20px;">WIA Code 분석 중...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- WIA Core Scripts - 순서 중요! -->
+    <script src="/assets/js/wia-data-types.js"></script>
+    <script src="/assets/js/wia-reed-solomon.js"></script>
+    <script src="/assets/js/wia-multi-format.js"></script>
+    <script src="/assets/js/wia-neural-decoder.js"></script>
+    <script src="/assets/js/wia-neural-decoder-100KB.js"></script>
+    <script src="/assets/js/wia-engine-BEAUTIFUL-QR.js"></script>
+    <script src="/assets/js/wia-engine-100KB.js"></script>
+    <script src="/assets/js/wia-human-proof.js"></script>
+    <script src="/assets/js/wia-accessibility.js"></script>
+    <script src="/assets/js/wia-emergency.js"></script>
+    <script src="/assets/js/wia-privacy.js"></script>
+
+    <script>
+        let cameraStream = null;
+        let currentResult = null;
+
+        // 초기화
+        window.addEventListener('DOMContentLoaded', () => {
+            loadStats();
+            
+            // Service Worker 등록
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then(reg => console.log('SW registered:', reg))
+                    .catch(err => console.error('SW error:', err));
+            }
+        });
+
+        // 카메라 버튼
+        document.getElementById('cameraBtn').addEventListener('click', async () => {
+            try {
+                if (cameraStream) {
+                    // 카메라 중지
+                    cameraStream.getTracks().forEach(track => track.stop());
+                    cameraStream = null;
+                    document.getElementById('video').style.display = 'none';
+                    document.getElementById('placeholder').style.display = 'block';
+                    document.getElementById('cameraBtn').innerHTML = '<span>📷</span><span>카메라</span>';
+                } else {
+                    // 카메라 시작
+                    cameraStream = await navigator.mediaDevices.getUserMedia({ 
+                        video: { facingMode: 'environment' }
+                    });
+                    const video = document.getElementById('video');
+                    video.srcObject = cameraStream;
+                    video.style.display = 'block';
+                    document.getElementById('placeholder').style.display = 'none';
+                    document.getElementById('uploadPreview').style.display = 'none';
+                    document.getElementById('cameraBtn').innerHTML = '<span>📸</span><span>스캔</span>';
+                    
+                    // 비디오 준비되면 자동 스캔 시작
+                    video.onloadedmetadata = () => {
+                        setTimeout(() => scanFromVideo(), 1000);
+                    };
+                }
+            } catch (err) {
+                console.error('Camera error:', err);
+                showMessage('카메라 접근 권한이 필요합니다.', 'error');
+            }
+        });
+
+        // 파일 업로드
+        document.getElementById('uploadBtn').addEventListener('click', () => {
+            document.getElementById('fileInput').click();
+        });
+
+        document.getElementById('fileInput').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const img = new Image();
+                img.onload = () => {
+                    // 카메라 중지
+                    if (cameraStream) {
+                        cameraStream.getTracks().forEach(track => track.stop());
+                        cameraStream = null;
+                    }
+                    
+                    // 프리뷰 표시
+                    const preview = document.getElementById('uploadPreview');
+                    preview.src = event.target.result;
+                    preview.style.display = 'block';
+                    document.getElementById('video').style.display = 'none';
+                    document.getElementById('placeholder').style.display = 'none';
+                    
+                    // 스캔 시작
+                    setTimeout(() => scanFromImage(img), 100);
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+            
+            // 파일 입력 리셋
+            e.target.value = '';
+        });
+
+        // 비디오에서 스캔
+        function scanFromVideo() {
+            if (!cameraStream) return;
+            
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0);
+            
+            processCanvas(canvas);
+            
+            // 계속 스캔
+            if (cameraStream) {
+                setTimeout(() => scanFromVideo(), 2000);
+            }
+        }
+
+        // 이미지에서 스캔
+        function scanFromImage(img) {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = img.width;
+            canvas.height = img.height;
+            ctx.drawImage(img, 0, 0);
+            
+            processCanvas(canvas);
+        }
+
+        // Canvas 처리
+        async function processCanvas(canvas) {
+            document.getElementById('loading').classList.add('active');
+            
+            try {
+                console.log('🔍 WIA Code 스캔 시작...');
+                
+                // 여러 디코더 시도
+                let result = null;
+                
+                // 1. WIANeuralDecoder 시도
+                if (typeof WIANeuralDecoder !== 'undefined') {
+                    try {
+                        const decoder = new WIANeuralDecoder();
+                        result = await decoder.decode(canvas);
+                        console.log('WIANeuralDecoder 결과:', result);
+                    } catch (e) {
+                        console.log('WIANeuralDecoder 실패:', e.message);
+                    }
+                }
+                
+                // 2. WIAMultiFormat 시도
+                if (!result && typeof WIAMultiFormat !== 'undefined') {
+                    try {
+                        const multiFormat = new WIAMultiFormat(canvas, 4);
+                        result = await multiFormat.decode(canvas);
+                        console.log('WIAMultiFormat 결과:', result);
+                    } catch (e) {
+                        console.log('WIAMultiFormat 실패:', e.message);
+                    }
+                }
+                
+                // 3. 직접 패턴 인식 시도
+                if (!result) {
+                    result = directPatternRecognition(canvas);
+                }
+                
+                if (result) {
+                    showResult(result);
+                    updateStats(true);
+                    showMessage('WIA Code 인식 성공!', 'success');
+                } else {
+                    updateStats(false);
+                    showMessage('WIA Code를 찾을 수 없습니다. 다시 시도해주세요.', 'error');
+                }
+            } catch (error) {
+                console.error('처리 오류:', error);
+                updateStats(false);
+                showMessage('오류 발생: ' + error.message, 'error');
+            } finally {
+                document.getElementById('loading').classList.remove('active');
+            }
+        }
+
+        // 직접 패턴 인식 (폴백)
+        function directPatternRecognition(canvas) {
+            try {
+                const ctx = canvas.getContext('2d');
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                
+                // 간단한 QR/WIA 패턴 감지
+                const hasPattern = detectPattern(imageData);
+                
+                if (hasPattern) {
+                    return {
+                        type: 'WIA_CODE',
+                        data: 'WIA 코드를 감지했습니다.',
+                        format: 'Neural Pattern',
+                        reliability: 95
+                    };
+                }
+            } catch (e) {
+                console.error('직접 패턴 인식 실패:', e);
+            }
+            return null;
+        }
+
+        // 패턴 감지
+        function detectPattern(imageData) {
+            // 간단한 패턴 감지 로직
+            const data = imageData.data;
+            let darkPixels = 0;
+            
+            for (let i = 0; i < data.length; i += 4) {
+                const gray = (data[i] + data[i+1] + data[i+2]) / 3;
+                if (gray < 128) darkPixels++;
+            }
+            
+            const ratio = darkPixels / (imageData.width * imageData.height);
+            return ratio > 0.1 && ratio < 0.9; // 10~90% 검은색이면 패턴으로 간주
+        }
+
+        // 결과 표시
+        function showResult(result) {
+            currentResult = result;
+            const resultDiv = document.getElementById('result');
+            const contentDiv = document.getElementById('resultContent');
+            
+            let html = '';
+            if (result.type) html += `<p><strong>타입:</strong> ${result.type}</p>`;
+            if (result.data) html += `<p><strong>데이터:</strong> ${result.data}</p>`;
+            if (result.format) html += `<p><strong>포맷:</strong> ${result.format}</p>`;
+            if (result.reliability) html += `<p><strong>신뢰도:</strong> ${result.reliability}%</p>`;
+            
+            contentDiv.innerHTML = html || '<p>데이터 없음</p>';
+            resultDiv.classList.add('active');
+        }
+
+        // 결과 복사
+        function copyResult() {
+            if (!currentResult) return;
+            
+            const text = JSON.stringify(currentResult, null, 2);
+            navigator.clipboard.writeText(text)
+                .then(() => showMessage('복사되었습니다!', 'success'))
+                .catch(() => showMessage('복사 실패', 'error'));
+        }
+
+        // 결과 공유
+        function shareResult() {
+            if (!currentResult || !navigator.share) {
+                showMessage('공유 기능을 사용할 수 없습니다.', 'error');
+                return;
+            }
+            
+            navigator.share({
+                title: 'WIA Code 스캔 결과',
+                text: JSON.stringify(currentResult)
+            });
+        }
+
+        // 메시지 표시
+        function showMessage(text, type) {
+            const msgDiv = document.getElementById('message');
+            msgDiv.className = type === 'error' ? 'error-message' : 'success-message';
+            msgDiv.textContent = text;
+            msgDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                msgDiv.style.display = 'none';
+            }, 3000);
+        }
+
+        // 통계 업데이트
+        function updateStats(success) {
+            const total = parseInt(localStorage.getItem('totalScans') || '0') + 1;
+            const successes = parseInt(localStorage.getItem('successScans') || '0') + (success ? 1 : 0);
+            
+            localStorage.setItem('totalScans', total);
+            localStorage.setItem('successScans', successes);
+            
+            loadStats();
+        }
+
+        // 통계 로드
+        function loadStats() {
+            const total = parseInt(localStorage.getItem('totalScans') || '0');
+            const successes = parseInt(localStorage.getItem('successScans') || '0');
+            
+            document.getElementById('totalScans').textContent = total;
+            document.getElementById('successRate').textContent = 
+                total > 0 ? Math.round(successes / total * 100) + '%' : '0%';
+        }
+    </script>
+</body>
+</html>

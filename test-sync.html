@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WIA Neural Sync Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #667eea;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #333;
+            margin-top: 20px;
+        }
+        canvas {
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            display: block;
+            margin: 10px 0;
+        }
+        .controls {
+            margin: 15px 0;
+        }
+        input, button {
+            padding: 8px 15px;
+            margin: 5px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover {
+            background: #5568d3;
+        }
+        .result {
+            background: #f9f9f9;
+            padding: 15px;
+            border-left: 4px solid #667eea;
+            margin: 10px 0;
+            font-family: monospace;
+        }
+        .success {
+            border-left-color: #4CAF50;
+            background: #e8f5e9;
+        }
+        .error {
+            border-left-color: #f44336;
+            background: #ffebee;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin: 15px 0;
+        }
+        .stat-box {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧠 WIA Neural Code - Generator/Reader Sync Test</h1>
+
+    <div class="container">
+        <h2>1️⃣ Generator (Encode)</h2>
+        <div class="controls">
+            <input type="text" id="inputData" value="Hello WIA" placeholder="Enter text to encode">
+            <button onclick="generateCode()">Generate Code</button>
+        </div>
+        <canvas id="canvas"></canvas>
+        <div id="generatorStats" class="stats"></div>
+    </div>
+
+    <div class="container">
+        <h2>2️⃣ Reader (Decode)</h2>
+        <div class="controls">
+            <button onclick="decodeCode()">Decode Code</button>
+        </div>
+        <div id="decoderResult" class="result"></div>
+        <div id="decoderStats" class="stats"></div>
+    </div>
+
+    <div class="container">
+        <h2>✅ Sync Validation</h2>
+        <div id="validationResult"></div>
+    </div>
+
+    <script src="assets/js/wia-engine-BEAUTIFUL-QR.js"></script>
+    <script src="assets/js/wia-neural-decoder.js"></script>
+    <script>
+        let engine;
+        let decoder;
+        let originalData = '';
+
+        // Initialize
+        window.onload = function() {
+            const canvas = document.getElementById('canvas');
+            engine = new WIANeuralEngine(canvas);
+            decoder = new WIANeuralDecoder();
+
+            console.log('✅ Test initialized!');
+
+            // Auto-run test
+            setTimeout(() => {
+                generateCode();
+                setTimeout(() => decodeCode(), 500);
+            }, 500);
+        };
+
+        function generateCode() {
+            const input = document.getElementById('inputData').value;
+            originalData = input;
+
+            console.log('🚀 Generating code for:', originalData);
+
+            // Generate
+            engine.generate(originalData, 'basic', 'high');
+
+            // Show stats
+            const stats = `
+                <div class="stat-box">
+                    <div class="stat-label">Input Data</div>
+                    <div class="stat-value">${originalData}</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Neurons</div>
+                    <div class="stat-value">${engine.neurons.length}</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Bytes</div>
+                    <div class="stat-value">${originalData.length}</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Pattern</div>
+                    <div class="stat-value">Basic</div>
+                </div>
+            `;
+            document.getElementById('generatorStats').innerHTML = stats;
+        }
+
+        async function decodeCode() {
+            console.log('🔍 Decoding code...');
+
+            const canvas = document.getElementById('canvas');
+            const result = await decoder.decode(canvas);
+
+            if (result) {
+                const isMatch = result.data === originalData;
+                const resultClass = isMatch ? 'result success' : 'result error';
+
+                const resultHTML = `
+                    <div class="${resultClass}">
+                        <strong>Decoded Data:</strong> ${result.data}<br>
+                        <strong>Type:</strong> ${result.type}<br>
+                        <strong>Format:</strong> ${result.format}<br>
+                        <strong>Reliability:</strong> ${result.reliability}%<br>
+                        <strong>CRC Valid:</strong> ${result.crcValid ? '✅' : '❌'}<br>
+                        <strong>Parity Valid:</strong> ${result.parityValid ? '✅' : '❌'}
+                    </div>
+                `;
+                document.getElementById('decoderResult').innerHTML = resultHTML;
+
+                const stats = `
+                    <div class="stat-box">
+                        <div class="stat-label">Neurons Detected</div>
+                        <div class="stat-value">${result.neuronCount}</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Bytes Restored</div>
+                        <div class="stat-value">${result.byteCount}</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Reliability</div>
+                        <div class="stat-value">${result.reliability}%</div>
+                    </div>
+                    <div class="stat-box ${isMatch ? 'success' : 'error'}">
+                        <div class="stat-label">Match</div>
+                        <div class="stat-value">${isMatch ? '✅' : '❌'}</div>
+                    </div>
+                `;
+                document.getElementById('decoderStats').innerHTML = stats;
+
+                // Validation
+                validateSync(result);
+            } else {
+                document.getElementById('decoderResult').innerHTML = `
+                    <div class="result error">
+                        <strong>❌ Decoding Failed</strong><br>
+                        Check console for errors.
+                    </div>
+                `;
+            }
+        }
+
+        function validateSync(result) {
+            const checks = [];
+
+            // Check 1: Neuron count
+            const neuronCountOK = result.neuronCount === 56;
+            checks.push({
+                name: 'Neuron Count',
+                expected: 56,
+                actual: result.neuronCount,
+                pass: neuronCountOK
+            });
+
+            // Check 2: Data match
+            const dataMatchOK = result.data === originalData;
+            checks.push({
+                name: 'Data Match',
+                expected: originalData,
+                actual: result.data,
+                pass: dataMatchOK
+            });
+
+            // Check 3: CRC validation
+            checks.push({
+                name: 'CRC32 Check',
+                expected: 'Valid',
+                actual: result.crcValid ? 'Valid' : 'Invalid',
+                pass: result.crcValid
+            });
+
+            // Check 4: Parity validation
+            checks.push({
+                name: 'Parity Check',
+                expected: 'Valid',
+                actual: result.parityValid ? 'Valid' : 'Invalid',
+                pass: result.parityValid
+            });
+
+            // Check 5: Reliability
+            const reliabilityOK = result.reliability >= 95;
+            checks.push({
+                name: 'Reliability',
+                expected: '≥95%',
+                actual: `${result.reliability}%`,
+                pass: reliabilityOK
+            });
+
+            // Generate validation report
+            let html = '<table style="width:100%; border-collapse: collapse;">';
+            html += '<tr style="background: #667eea; color: white;"><th style="padding: 10px; text-align: left;">Check</th><th>Expected</th><th>Actual</th><th>Status</th></tr>';
+
+            checks.forEach(check => {
+                const status = check.pass ? '✅ PASS' : '❌ FAIL';
+                const rowClass = check.pass ? 'background: #e8f5e9;' : 'background: #ffebee;';
+                html += `<tr style="${rowClass}">
+                    <td style="padding: 10px;">${check.name}</td>
+                    <td style="padding: 10px; text-align: center;">${check.expected}</td>
+                    <td style="padding: 10px; text-align: center;">${check.actual}</td>
+                    <td style="padding: 10px; text-align: center;">${status}</td>
+                </tr>`;
+            });
+
+            html += '</table>';
+
+            const allPass = checks.every(c => c.pass);
+            const summary = allPass
+                ? '<h3 style="color: #4CAF50;">🎉 All checks passed! Generator and Reader are perfectly synchronized!</h3>'
+                : '<h3 style="color: #f44336;">⚠️ Some checks failed. Review the details above.</h3>';
+
+            document.getElementById('validationResult').innerHTML = summary + html;
+        }
+    </script>
+</body>
+</html>
