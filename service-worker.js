@@ -14,7 +14,6 @@ const urlsToCache = [
   '/assets/js/wia-emergency.js',
   '/assets/js/wia-privacy.js',
   '/assets/js/wia-neural-decoder.js',
-  '/assets/css/wia-reader.css',
   '/icons/icon-72x72.png',
   '/icons/icon-96x96.png',
   '/icons/icon-128x128.png',
