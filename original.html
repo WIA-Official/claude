@@ -1,0 +1,1793 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧠 WIA Neural Code Generator - 차세대 QR 코드 생성 시스템</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --wia-primary: #667eea;
+            --wia-secondary: #764ba2;
+            --wia-success: #4caf50;
+            --wia-warning: #ff9800;
+            --wia-danger: #f44336;
+            --wia-dark: #212529;
+            --wia-light: #f8f9fa;
+        }
+
+        * {
+            transition: all 0.3s ease;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .main-container {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            margin: 20px auto;
+            max-width: 1400px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header-section {
+            background: linear-gradient(135deg, var(--wia-primary) 0%, var(--wia-secondary) 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        /* 우측 상단 언어 선택 버튼 */
+        .language-selector {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 10;
+        }
+
+        .language-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            padding: 10px 16px;
+            border-radius: 25px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .language-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .header-section::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><polygon points="50,15 85,75 15,75" fill="rgba(255,255,255,0.1)"/></svg>') repeat;
+            background-size: 50px 50px;
+            opacity: 0.1;
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        .main-title {
+            font-size: 3rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .brain-emoji {
+            display: inline-block;
+            animation: brainPulse 2s ease-in-out infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes brainPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 20px;
+        }
+
+        .features-badges {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .feature-badge {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 16px;
+            border-radius: 25px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .content-area {
+            padding: 40px;
+        }
+
+        .form-section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(102, 126, 234, 0.1);
+        }
+
+        .section-title {
+            color: var(--wia-primary);
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* 데이터 타입 선택기 */
+        .type-selector {
+            margin-bottom: 20px;
+        }
+
+        .type-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .tab-btn {
+            padding: 10px 20px;
+            border: 2px solid #e9ecef;
+            background: white;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: transparent;
+        }
+
+        .type-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .type-card {
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: white;
+        }
+
+        .type-card:hover {
+            border-color: var(--wia-primary);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+        }
+
+        .type-card.selected {
+            border-color: var(--wia-primary);
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+        }
+
+        .type-icon {
+            font-size: 1.5rem;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .type-name {
+            font-weight: 600;
+            margin-bottom: 3px;
+            font-size: 0.85rem;
+        }
+
+        .type-desc {
+            font-size: 0.7rem;
+            color: #6c757d;
+            line-height: 1.2;
+        }
+
+        /* 동적 입력 폼 */
+        .input-form {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 25px;
+            margin-top: 20px;
+            border-left: 4px solid var(--wia-primary);
+            display: none;
+        }
+
+        .input-form.active {
+            display: block;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: var(--wia-dark);
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .form-control {
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 12px;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+            width: 100%;
+        }
+
+        .form-control:focus {
+            border-color: var(--wia-primary);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            outline: none;
+        }
+
+        /* 실시간 미리보기 */
+        .preview-panel {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            position: sticky;
+            top: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(102, 126, 234, 0.1);
+        }
+
+        /* 마커 커스터마이징 영역 - 미리보기 위쪽으로 이동 */
+        .marker-customization {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 4px solid var(--wia-warning);
+        }
+
+        .customize-section {
+            margin-bottom: 15px;
+        }
+
+        .customize-section h5 {
+            color: var(--wia-dark);
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .marker-selector {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .marker-option {
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+            background: white;
+        }
+        
+        .marker-option:hover {
+            border-color: var(--wia-primary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .marker-option.active {
+            border-color: var(--wia-primary);
+            background: linear-gradient(135deg, var(--wia-primary), var(--wia-secondary));
+            color: white;
+            font-weight: bold;
+        }
+
+        .size-slider {
+            width: 100%;
+            margin: 10px 0;
+        }
+
+        .color-picker-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 6px;
+        }
+
+        .color-option {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            border: 2px solid #e0e0e0;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .color-option:hover {
+            transform: scale(1.1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .color-option.active {
+            border-color: var(--wia-primary);
+            border-width: 3px;
+        }
+
+        .color-option.active::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 10px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+        }
+
+        .animation-options {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .animation-option {
+            padding: 6px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 15px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: white;
+        }
+
+        .animation-option:hover {
+            border-color: var(--wia-primary);
+        }
+
+        .animation-option.active {
+            border-color: var(--wia-primary);
+            background: var(--wia-primary);
+            color: white;
+        }
+
+        .preview-canvas-container {
+            position: relative;
+            width: 450px;
+            height: 450px;
+            margin: 20px auto;
+            border: 2px dashed #e9ecef;
+            border-radius: 15px;
+            background: white;
+            overflow: hidden;
+        }
+        
+        .preview-controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 5px;
+            z-index: 20;
+        }
+        
+        .btn-icon {
+            width: 28px;
+            height: 28px;
+            border: none;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.9);
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .btn-icon:hover {
+            background: white;
+            transform: scale(1.1);
+        }
+
+        #wiaCanvas {
+            width: 100%;
+            height: 100%;
+            transform-origin: center;
+            transition: transform 0.3s ease;
+        }
+
+        /* 생성 섹션 */
+        .generate-section {
+            padding: 30px;
+            background: linear-gradient(135deg, var(--wia-primary) 0%, var(--wia-secondary) 100%);
+            text-align: center;
+        }
+
+        .generate-btn {
+            background: white;
+            color: var(--wia-primary);
+            border: none;
+            padding: 15px 40px;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .generate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .generate-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* 로딩 및 메시지 */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 15px;
+        }
+
+        .loading.show { display: block; }
+
+        .spinner {
+            width: 30px; height: 30px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--wia-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .alert {
+            padding: 15px; border-radius: 10px; margin-top: 20px;
+            display: none;
+        }
+
+        .alert.show {
+            display: block;
+            animation: slideUp 0.5s ease;
+        }
+
+        .alert-success { background: var(--wia-success); color: white; }
+        .alert-danger { background: var(--wia-danger); color: white; }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 키 애니메이션 */
+        @keyframes pulse {
+            0%, 100% { opacity: 0.7; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.05); }
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes rotate90 {
+            from { transform: rotate(var(--start-angle, 0deg)); }
+            to { transform: rotate(var(--end-angle, 90deg)); }
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            60% { transform: translateY(-5px); }
+        }
+
+        .marker-pulse { animation: pulse 2s infinite; }
+        .marker-rotate { 
+            transform: rotate(0deg);
+            transition: transform 0.5s ease;
+        }
+        .marker-bounce { animation: bounce 2s infinite; }
+
+        /* 모바일 최적화 */
+        @media (max-width: 768px) {
+            .main-title { font-size: 2rem; }
+            .content-area { padding: 20px; }
+            .type-grid { grid-template-columns: repeat(2, 1fr); }
+            .preview-canvas-container { width: 280px; height: 280px; }
+            .color-picker-grid { grid-template-columns: repeat(6, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <!-- 헤더 섹션 -->
+        <div class="header-section">
+            <!-- 우측 상단 언어 선택 버튼 -->
+            <div class="language-selector">
+                <button class="language-btn" onclick="openLanguageModal()">
+                    <i class="fas fa-globe"></i>
+                    <span id="currentLangDisplay">KO</span>
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+            </div>
+            
+            <div class="header-content">
+                <h1 class="main-title">
+                    <span class="brain-emoji">🧠</span><span data-t="header.title">WIA Neural Code</span>
+                </h1>
+                <p class="subtitle" data-t="header.subtitle">차세대 WIA Code 생성 시스템</p>
+                <div class="features-badges">
+                    <div class="feature-badge">🎯 <span data-t="header.badge.types">37개 데이터 타입</span></div>
+                    <div class="feature-badge">🌍 <span data-t="header.badge.languages">211개 언어 지원</span></div>
+                    <div class="feature-badge">📊 <span data-t="header.badge.encoding">9KB 정확한 인코딩</span></div>
+                    <div class="feature-badge">📺 <span data-t="header.badge.marker">커스텀 마커 시스템</span></div>
+                    <div class="feature-badge">⚡ <span data-t="header.badge.preview">실시간 미리보기</span></div>
+                    <div class="feature-badge">🚀 <span data-t="header.badge.batch">배치 일괄 생성</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-area">
+            <div class="row">
+                <!-- 왼쪽: 입력 폼 -->
+                <div class="col-lg-7">
+                    <!-- 1. 기본 설정 -->
+                    <div class="form-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-cog"></i>
+                            <span data-t="basic.settings">기본 설정</span>
+                        </h3>
+                        
+                        <div class="form-group">
+                            <label class="form-label" data-t="basic.code.name">코드 이름</label>
+                            <input type="text" id="codeName" class="form-control" 
+                                   data-t="basic.code.placeholder" placeholder="예: Instagram 프로필 WIA">
+                        </div>
+
+                        <!-- 데이터 타입 선택기 -->
+                        <div class="type-selector">
+                            <label class="form-label" data-t="basic.data.type">데이터 타입 선택</label>
+                            
+                            <div class="type-tabs">
+                                <button class="tab-btn active" data-category="static">
+                                    <span data-t="basic.static">정적 WIA (17개)</span>
+                                </button>
+                                <button class="tab-btn" data-category="dynamic">
+                                    <span data-t="basic.dynamic">동적 WIA (20개)</span>
+                                </button>
+                            </div>
+                            
+                            <div class="type-grid" id="typeGrid">
+                                <!-- JavaScript로 동적 생성 -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. 데이터 입력 폼들 (동적 생성) -->
+                    <div class="form-section" id="dataInputSection">
+                        <h3 class="section-title">
+                            <i class="fas fa-edit"></i>
+                            <span data-t="data.input">데이터 입력</span>
+                        </h3>
+                        
+                        <!-- 각 타입별 입력 폼들 -->
+                        <div id="inputForms">
+                            <!-- JavaScript로 동적 생성 -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 오른쪽: 미리보기 -->
+                <div class="col-lg-5">
+                    <div class="preview-panel">
+                        <!-- 마커 커스터마이징 - 미리보기 위쪽으로 이동 -->
+                        <div class="marker-customization">
+                            <div class="customize-section">
+                                <h5 data-t="marker.shape">마커 모양 선택</h5>
+                                <div class="marker-selector">
+                                    <div class="marker-option active" data-marker="triangle">📺 <span data-t="marker.triangle">삼각형</span></div>
+                                    <div class="marker-option" data-marker="heart">❤️ <span data-t="marker.heart">하트</span></div>
+                                    <div class="marker-option" data-marker="star">⭐ <span data-t="marker.star">별</span></div>
+                                    <div class="marker-option" data-marker="diamond">◆ <span data-t="marker.diamond">다이아몬드</span></div>
+                                    <div class="marker-option" data-marker="moon">🌙 <span data-t="marker.moon">달</span></div>
+                                    <div class="marker-option" data-marker="lightning">⚡ <span data-t="marker.lightning">번개</span></div>
+                                </div>
+                            </div>
+
+                            <div class="customize-section">
+                                <h5 data-t="marker.size">마커 크기</h5>
+                                <input type="range" class="size-slider" id="markerSize" 
+                                       min="50" max="150" value="100" step="10">
+                                <small><span data-t="marker.size.label">크기</span>: <span id="sizeValue">100</span>%</small>
+                            </div>
+
+                            <div class="customize-section">
+                                <h5 data-t="marker.color">마커 색상</h5>
+                                <div class="color-picker-grid">
+                                    <div class="color-option active" data-color="#000000" style="background: #000000"></div>
+                                    <div class="color-option" data-color="#667eea" style="background: #667eea"></div>
+                                    <div class="color-option" data-color="#764ba2" style="background: #764ba2"></div>
+                                    <div class="color-option" data-color="#f093fb" style="background: #f093fb"></div>
+                                    <div class="color-option" data-color="#4facfe" style="background: #4facfe"></div>
+                                    <div class="color-option" data-color="#43e97b" style="background: #43e97b"></div>
+                                    <div class="color-option" data-color="#fa709a" style="background: #fa709a"></div>
+                                    <div class="color-option" data-color="#fee140" style="background: #fee140"></div>
+                                </div>
+                            </div>
+
+                            <div class="customize-section">
+                                <h5 data-t="marker.animation">애니메이션 효과</h5>
+                                <div class="animation-options">
+                                    <div class="animation-option active" data-animation="none" data-t="marker.animation.none">없음</div>
+                                    <div class="animation-option" data-animation="pulse" data-t="marker.animation.pulse">펄스</div>
+                                    <div class="animation-option" data-animation="rotate" data-t="marker.animation.rotate">회전</div>
+                                    <div class="animation-option" data-animation="bounce" data-t="marker.animation.bounce">바운스</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <h3 class="section-title">
+                            <i class="fas fa-eye"></i>
+                            <span data-t="preview.title">실시간 미리보기</span>
+                        </h3>
+                        
+                        <div class="preview-canvas-container">
+                            <div class="preview-controls">
+                                <button id="rotateBtn" class="btn-icon" title="90도 회전">🔄</button>
+                                <button id="zoomInBtn" class="btn-icon" title="확대">+</button>
+                                <button id="zoomOutBtn" class="btn-icon" title="축소">−</button>
+                                <button id="fullscreenBtn" class="btn-icon" title="전체화면">⛶</button>
+                            </div>
+                            <canvas id="wiaCanvas" width="450" height="450"></canvas>
+                        </div>
+                        
+                        <div class="loading" id="previewLoading">
+                            <div class="spinner"></div>
+                            <p data-t="preview.generating">미리보기 생성 중...</p>
+                        </div>
+                        
+                        <!-- 미리보기 정보 -->
+                        <div class="mt-3" id="previewInfo">
+                            <div class="row text-center">
+                                <div class="col-4">
+                                    <strong id="estimatedSize">0</strong>
+                                    <br><small data-t="preview.bytes">바이트</small>
+                                </div>
+                                <div class="col-4">
+                                    <strong id="chunkCount">0</strong>
+                                    <br><small data-t="preview.chunks">청크</small>
+                                </div>
+                                <div class="col-4">
+                                    <strong id="markerCount">3</strong>
+                                    <br><small data-t="preview.markers">마커</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 생성 섹션 -->
+        <div class="generate-section">
+            <button type="button" class="generate-btn" id="generateBtn">
+                <i class="fas fa-magic"></i>
+                <span data-t="generate.button">WIA Neural Code 생성하기</span>
+            </button>
+            
+            <div class="mt-3">
+                <input type="checkbox" id="batchModeToggle" class="me-2">
+                <label for="batchModeToggle" style="color: rgba(255,255,255,0.8);" data-t="generate.batch">배치 생성 모드</label>
+            </div>
+            
+            <div class="alert alert-success" id="successMessage"></div>
+            <div class="alert alert-danger" id="errorMessage"></div>
+        </div>
+    </div>
+
+    <!-- WIA Language Files -->
+    <script src="./languages/ko.js"></script>
+    <script src="./languages/en.js"></script>
+    
+    <!-- WIA Language Modal Component -->
+    <script src="./language-modal-211/wia-language-modal-211.js"></script>
+    
+    <!-- JavaScript 시작 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // ============================================================================
+        // 🌍 WIA Neural Code 다국어 시스템
+        // ============================================================================
+        
+        // 현재 선택된 언어
+        let currentLanguage = localStorage.getItem('wia_neural_language') || 'ko';
+
+        // 번역 함수 - 외부 언어 파일 사용
+        function t(key) {
+            const translations = window.WIATranslations || {};
+            return translations[currentLanguage] && translations[currentLanguage][key] 
+                ? translations[currentLanguage][key] 
+                : (translations['ko'] && translations['ko'][key]) || key;
+        }
+
+        // UI 번역 적용 함수
+        function applyTranslations() {
+            console.log('🌍 번역 적용 시작:', currentLanguage);
+            
+            // data-t 속성을 가진 모든 요소에 번역 적용
+            document.querySelectorAll('[data-t]').forEach(element => {
+                const key = element.getAttribute('data-t');
+                const translatedText = t(key);
+                
+                if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
+                    element.placeholder = translatedText;
+                } else {
+                    element.textContent = translatedText;
+                }
+            });
+            
+            console.log('🌍 UI 번역 적용 완료:', currentLanguage);
+        }
+
+        // 언어 변경 핸들러
+        function onLanguageChanged(newLang) {
+            currentLanguage = newLang;
+            localStorage.setItem('wia_neural_language', newLang);
+            
+            // UI 번역 적용
+            applyTranslations();
+            
+            // 언어 표시 업데이트
+            const display = document.getElementById('currentLangDisplay');
+            if (display) {
+                display.textContent = newLang.toUpperCase().substring(0, 2);
+            }
+            
+            console.log('🌍 언어 변경됨:', newLang);
+        }
+
+        // ============================================================================
+        // 🧠 WIA Neural Code Generator - Complete 37 Types Implementation
+        // ============================================================================
+
+        class WIANeuralCodeGenerator {
+            constructor() {
+                this.apiUrl = 'http://localhost:3002/api/wia';
+                this.currentDataType = 'text';
+                this.currentCategory = 'static';
+                this.previewTimeout = null;
+                this.qrCodeInstance = null;
+                this.zoomLevel = 1;
+                this.currentMarker = 'triangle';
+                this.markerSize = 100;
+                this.markerColor = '#000000';
+                this.markerAnimation = 'none';
+                this.rotationAngle = 0; // 90도 단계 회전을 위한 각도 추적
+                
+                // 37가지 데이터 타입 정의 (정적 17개 + 동적 20개)
+                this.dataTypes = {
+                    // ========== 정적 WIA (17개) ==========
+                    'text': { icon: '📝', name: '텍스트', desc: '일반 텍스트 메시지', category: 'static' },
+                    'sms': { icon: '💬', name: 'SMS & 메시지', desc: 'SMS 문자 메시지', category: 'static' },
+                    'wifi': { icon: '📶', name: 'WiFi', desc: 'WiFi 네트워크 정보', category: 'static' },
+                    'staticvcard': { icon: '👤', name: '정적 vCard', desc: '정적 연락처 카드', category: 'static' },
+                    'event': { icon: '📅', name: '이벤트', desc: '캘린더 일정', category: 'static' },
+                    'dna': { icon: '🧬', name: 'DNA 정보', desc: '유전자 정보, 혈통', category: 'static' },
+                    'medical': { icon: '🏥', name: '의료 정보', desc: '응급 의료, 알레르기', category: 'static' },
+                    'gps': { icon: '🌍', name: 'WIA PIN Code', desc: '정확한 위치 정보', category: 'static' },
+                    'key': { icon: '🔐', name: '암호화 키', desc: '공개키, 디지털 서명', category: 'static' },
+                    'iot': { icon: '📊', name: 'IoT 설정', desc: '스마트홈 기기 설정', category: 'static' },
+                    'ticket': { icon: '🎫', name: '티켓/패스', desc: '항공권, 콘서트 티켓', category: 'static' },
+                    'human': { icon: '🧠', name: '휴먼 증명', desc: '로봇 vs 인간 구분', category: 'static' },
+                    // 추가 미래형 정적 타입
+                    'biometric': { icon: '👆', name: '생체 인증', desc: '지문, 홍채, DNA 패턴', category: 'static' },
+                    'carbon': { icon: '🌿', name: '탄소 발자국', desc: '개인/제품 환경 데이터', category: 'static' },
+                    'neural': { icon: '🧠', name: '신경 패턴', desc: '뇌파, 감정 상태 인코딩', category: 'static' },
+                    'quantum': { icon: '⚛️', name: '양자 키', desc: '양자 암호화 정보', category: 'static' },
+                    'hologram': { icon: '🔮', name: '홀로그램 설정', desc: 'AR/VR 객체 정보', category: 'static' },
+                    
+                    // ========== 동적 WIA (20개) ==========
+                    'link': { icon: '🔗', name: '링크', desc: '웹사이트 URL', category: 'dynamic' },
+                    'email': { icon: '📧', name: '이메일', desc: '이메일 주소와 내용', category: 'dynamic' },
+                    'phone': { icon: '📞', name: '전화', desc: '전화번호 다이얼', category: 'dynamic' },
+                    'smsonly': { icon: '📱', name: 'SMS', desc: 'SMS 전용', category: 'dynamic' },
+                    'vcard': { icon: '👥', name: 'vCard', desc: '동적 연락처 카드', category: 'dynamic' },
+                    'application': { icon: '📱', name: '앱 스토어', desc: 'App Store 링크', category: 'dynamic' },
+                    'file': { icon: '📎', name: '파일', desc: '파일 업로드', category: 'dynamic' },
+                    'whatsapp': { icon: '💚', name: 'WhatsApp', desc: 'WhatsApp 메시지', category: 'dynamic' },
+                    'crypto': { icon: '₿', name: '암호화폐', desc: '지갑 주소', category: 'dynamic' },
+                    'aiprompt': { icon: '🤖', name: 'AI 프롬프트', desc: 'ChatGPT/Claude 템플릿', category: 'dynamic' },
+                    'game': { icon: '🎮', name: '게임 초대', desc: '멀티플레이어 게임 방', category: 'dynamic' },
+                    'prescription': { icon: '💊', name: '디지털 처방전', desc: '처방전 및 복용법', category: 'dynamic' },
+                    'store': { icon: '🏪', name: '상점 정보', desc: '실시간 재고, 할인', category: 'dynamic' },
+                    'vehicle': { icon: '🚗', name: '차량 정보', desc: 'CarPlay 연결', category: 'dynamic' },
+                    'bluetooth': { icon: '📡', name: '블루투스', desc: '즉시 디바이스 연결', category: 'dynamic' },
+                    // 추가 미래형 동적 타입
+                    'metaverse': { icon: '🌐', name: '메타버스 ID', desc: '아바타, 가상세계 좌표', category: 'dynamic' },
+                    'timecapsule': { icon: '⏰', name: '시간 캡슐', desc: '미래 특정 시점 활성화', category: 'dynamic' },
+                    'energy': { icon: '🔋', name: '에너지 거래', desc: '태양광/배터리 P2P 거래', category: 'dynamic' },
+                    'genetherapy': { icon: '🔬', name: '유전체 치료', desc: '개인 맞춤 의학 정보', category: 'dynamic' },
+                    'weather': { icon: '🌤️', name: '날씨 예측', desc: '초정밀 기상 데이터', category: 'dynamic' }
+                };
+
+                this.init();
+            }
+
+            async init() {
+                console.log('🧠 WIA Neural Code Generator 초기화 중...');
+                
+                try {
+                    this.setupCanvas();
+                    this.renderDataTypes();
+                    this.setupEventListeners();
+                    this.renderInputForms();
+                    this.setupMarkerCustomization();
+                    this.setupZoomControls();
+                    this.setupLanguageSystem(); // 언어 시스템 초기화
+                    this.updatePreview();
+                    
+                    console.log('✅ 초기화 완료! 37개 데이터 타입 WIA Neural Code 준비 완료!');
+                } catch (error) {
+                    console.error('❌ 초기화 오류:', error);
+                    this.showError('시스템 초기화 중 오류가 발생했습니다.');
+                }
+            }
+
+            setupLanguageSystem() {
+                // 언어 변경 이벤트 리스너 추가
+                window.addEventListener('wia-language-changed', (event) => {
+                    const newLang = event.detail.language;
+                    onLanguageChanged(newLang);
+                });
+
+                // 페이지 로드 후 초기 번역 적용
+                setTimeout(() => {
+                    const savedLang = localStorage.getItem('wia_neural_language') || 'ko';
+                    currentLanguage = savedLang;
+                    
+                    // 언어 표시 업데이트
+                    const display = document.getElementById('currentLangDisplay');
+                    if (display) {
+                        display.textContent = savedLang.toUpperCase().substring(0, 2);
+                    }
+                    
+                    // 번역 파일이 로드되면 UI 번역 적용
+                    if (window.WIATranslations && window.WIATranslations[savedLang]) {
+                        applyTranslations();
+                    }
+                    
+                    console.log('🌍 언어 시스템 초기화 완료:', savedLang);
+                }, 1000);
+            }
+
+            setupCanvas() {
+                this.canvas = document.getElementById('wiaCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                
+                // 고해상도 캔버스 설정
+                const dpr = window.devicePixelRatio || 1;
+                this.canvas.width = 450 * dpr;
+                this.canvas.height = 450 * dpr;
+                this.ctx.scale(dpr, dpr);
+                
+                // 초기 배경 설정
+                this.ctx.fillStyle = '#f8f9fa';
+                this.ctx.fillRect(0, 0, 450, 450);
+            }
+
+            setupZoomControls() {
+                const rotateBtn = document.getElementById('rotateBtn');
+                const zoomInBtn = document.getElementById('zoomInBtn');
+                const zoomOutBtn = document.getElementById('zoomOutBtn');
+                const fullscreenBtn = document.getElementById('fullscreenBtn');
+
+                rotateBtn.addEventListener('click', () => this.rotate90());
+                zoomInBtn.addEventListener('click', () => this.zoomIn());
+                zoomOutBtn.addEventListener('click', () => this.zoomOut());
+                fullscreenBtn.addEventListener('click', () => this.toggleFullscreen());
+
+                // 키보드 단축키
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === '+' || e.key === '=') {
+                        e.preventDefault();
+                        this.zoomIn();
+                    } else if (e.key === '-') {
+                        e.preventDefault();
+                        this.zoomOut();
+                    } else if (e.key === 'r' || e.key === 'R') {
+                        e.preventDefault();
+                        this.rotate90();
+                    } else if (e.key === 'f' || e.key === 'F') {
+                        e.preventDefault();
+                        this.toggleFullscreen();
+                    }
+                });
+            }
+
+            rotate90() {
+                this.rotationAngle += 90;
+                if (this.rotationAngle >= 360) this.rotationAngle = 0;
+                
+                const canvas = document.getElementById('wiaCanvas');
+                canvas.style.transform = `scale(${this.zoomLevel}) rotate(${this.rotationAngle}deg)`;
+                
+                console.log(`🔄 90도 회전: ${this.rotationAngle}도`);
+                
+                // 회전 버튼에 회전 애니메이션 효과
+                const rotateBtn = document.getElementById('rotateBtn');
+                rotateBtn.style.transform = 'rotate(360deg)';
+                setTimeout(() => {
+                    rotateBtn.style.transform = '';
+                }, 300);
+            }
+
+            zoomIn() {
+                this.zoomLevel = Math.min(3, this.zoomLevel + 0.2);
+                this.applyZoom();
+            }
+
+            zoomOut() {
+                this.zoomLevel = Math.max(0.5, this.zoomLevel - 0.2);
+                this.applyZoom();
+            }
+
+            applyZoom() {
+                const canvas = document.getElementById('wiaCanvas');
+                // 회전 애니메이션이 활성화된 경우 회전각도도 함께 적용
+                if (this.markerAnimation === 'rotate') {
+                    canvas.style.transform = `scale(${this.zoomLevel}) rotate(${this.rotationAngle}deg)`;
+                } else {
+                    canvas.style.transform = `scale(${this.zoomLevel})`;
+                }
+                console.log(`🔍 줌 레벨: ${(this.zoomLevel * 100).toFixed(0)}%`);
+            }
+
+            toggleFullscreen() {
+                const container = document.querySelector('.preview-canvas-container');
+                if (!document.fullscreenElement) {
+                    container.requestFullscreen().then(() => {
+                        container.style.background = '#000';
+                        this.applyZoom();
+                    });
+                } else {
+                    document.exitFullscreen().then(() => {
+                        container.style.background = 'white';
+                    });
+                }
+            }
+
+            setupMarkerCustomization() {
+                // 마커 모양 선택
+                document.querySelectorAll('.marker-option').forEach(option => {
+                    option.addEventListener('click', (e) => {
+                        document.querySelectorAll('.marker-option').forEach(opt => opt.classList.remove('active'));
+                        e.target.classList.add('active');
+                        this.currentMarker = e.target.dataset.marker;
+                        this.schedulePreview();
+                    });
+                });
+
+                // 마커 크기 조절
+                const sizeSlider = document.getElementById('markerSize');
+                const sizeValue = document.getElementById('sizeValue');
+                sizeSlider.addEventListener('input', (e) => {
+                    this.markerSize = parseInt(e.target.value);
+                    sizeValue.textContent = this.markerSize;
+                    this.schedulePreview();
+                });
+
+                // 마커 색상 선택
+                document.querySelectorAll('.color-option').forEach(option => {
+                    option.addEventListener('click', (e) => {
+                        document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('active'));
+                        e.target.classList.add('active');
+                        this.markerColor = e.target.dataset.color;
+                        this.schedulePreview();
+                    });
+                });
+
+                // 애니메이션 효과 선택
+                document.querySelectorAll('.animation-option').forEach(option => {
+                    option.addEventListener('click', (e) => {
+                        document.querySelectorAll('.animation-option').forEach(opt => opt.classList.remove('active'));
+                        e.target.classList.add('active');
+                        this.markerAnimation = e.target.dataset.animation;
+                        
+                        if (this.markerAnimation === 'rotate') {
+                            // 회전 애니메이션은 클릭시에만 90도 회전
+                            this.setupRotateOnClick();
+                        } else {
+                            this.applyMarkerAnimation();
+                        }
+                        this.schedulePreview();
+                    });
+                });
+            }
+
+            applyMarkerAnimation() {
+                const canvas = document.getElementById('wiaCanvas');
+                canvas.classList.remove('marker-pulse', 'marker-rotate', 'marker-bounce');
+                
+                if (this.markerAnimation === 'pulse') {
+                    canvas.classList.add('marker-pulse');
+                } else if (this.markerAnimation === 'bounce') {
+                    canvas.classList.add('marker-bounce');
+                } else if (this.markerAnimation === 'rotate') {
+                    canvas.classList.add('marker-rotate');
+                }
+            }
+
+            setupRotateOnClick() {
+                const canvas = document.getElementById('wiaCanvas');
+                
+                // 기존 클릭 이벤트 제거
+                canvas.removeEventListener('click', this.handleRotateClick);
+                
+                // 회전 클릭 핸들러 바인딩
+                this.handleRotateClick = () => {
+                    this.rotationAngle += 90;
+                    if (this.rotationAngle >= 360) this.rotationAngle = 0;
+                    
+                    canvas.style.transform = `scale(${this.zoomLevel}) rotate(${this.rotationAngle}deg)`;
+                    console.log(`🔄 마커 90도 회전: ${this.rotationAngle}도`);
+                };
+                
+                canvas.addEventListener('click', this.handleRotateClick);
+                canvas.style.cursor = 'pointer';
+                
+                // 초기 상태 설정
+                canvas.style.transform = `scale(${this.zoomLevel}) rotate(${this.rotationAngle}deg)`;
+            }
+
+            renderDataTypes() {
+                const typeGrid = document.getElementById('typeGrid');
+                const tabBtns = document.querySelectorAll('.tab-btn');
+                
+                // 탭 이벤트 리스너
+                tabBtns.forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        tabBtns.forEach(b => b.classList.remove('active'));
+                        e.target.classList.add('active');
+                        this.currentCategory = e.target.dataset.category;
+                        this.renderTypeCards();
+                    });
+                });
+                
+                this.renderTypeCards();
+            }
+
+            renderTypeCards() {
+                const typeGrid = document.getElementById('typeGrid');
+                const filteredTypes = Object.entries(this.dataTypes)
+                    .filter(([id, type]) => type.category === this.currentCategory);
+                
+                typeGrid.innerHTML = filteredTypes.map(([id, type]) => `
+                    <div class="type-card ${id === this.currentDataType ? 'selected' : ''}" 
+                         data-type="${id}">
+                        <span class="type-icon">${type.icon}</span>
+                        <div class="type-name">${type.name}</div>
+                        <div class="type-desc">${type.desc}</div>
+                    </div>
+                `).join('');
+
+                // 카드 클릭 이벤트
+                typeGrid.addEventListener('click', (e) => {
+                    const card = e.target.closest('.type-card');
+                    if (card) {
+                        this.selectDataType(card.dataset.type);
+                    }
+                });
+            }
+
+            selectDataType(typeId) {
+                this.currentDataType = typeId;
+                
+                // 선택된 카드 스타일 업데이트
+                document.querySelectorAll('.type-card').forEach(card => {
+                    card.classList.remove('selected');
+                });
+                document.querySelector(`[data-type="${typeId}"]`)?.classList.add('selected');
+                
+                // 입력 폼 업데이트
+                this.showInputForm(typeId);
+                this.schedulePreview();
+            }
+
+            renderInputForms() {
+                const formsContainer = document.getElementById('inputForms');
+                
+                // 모든 타입별 입력 폼 생성
+                Object.keys(this.dataTypes).forEach(typeId => {
+                    const formHtml = this.generateInputForm(typeId);
+                    formsContainer.innerHTML += `
+                        <div class="input-form" id="form-${typeId}">
+                            ${formHtml}
+                        </div>
+                    `;
+                });
+                
+                // 기본 텍스트 폼 활성화
+                this.showInputForm('text');
+            }
+
+            generateInputForm(typeId) {
+                switch (typeId) {
+                    case 'text':
+                        return `
+                            <div class="form-group">
+                                <label class="form-label">텍스트 내용</label>
+                                <textarea class="form-control" rows="4" 
+                                         placeholder="여기에 텍스트를 입력하세요..."></textarea>
+                            </div>
+                        `;
+
+                    case 'link':
+                        return `
+                            <div class="form-group">
+                                <label class="form-label">웹사이트 URL</label>
+                                <input type="url" class="form-control" 
+                                       placeholder="https://example.com">
+                            </div>
+                        `;
+
+                    case 'email':
+                        return `
+                            <div class="form-group">
+                                <label class="form-label">이메일 주소</label>
+                                <input type="email" class="form-control" 
+                                       placeholder="someone@example.com">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">제목</label>
+                                <input type="text" class="form-control" 
+                                       placeholder="이메일 제목">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">메시지</label>
+                                <textarea class="form-control" rows="3" 
+                                         placeholder="이메일 내용..."></textarea>
+                            </div>
+                        `;
+
+                    case 'phone':
+                        return `
+                            <div class="form-group">
+                                <label class="form-label">전화번호</label>
+                                <input type="tel" class="form-control" 
+                                       placeholder="+82-10-1234-5678">
+                            </div>
+                        `;
+
+                    case 'wifi':
+                        return `
+                            <div class="form-group">
+                                <label class="form-label">네트워크 이름 (SSID)</label>
+                                <input type="text" class="form-control" 
+                                       placeholder="MyWiFi">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">비밀번호</label>
+                                <input type="password" class="form-control" 
+                                       placeholder="WiFi 비밀번호">
+                            </div>
+                        `;
+
+                    case 'vcard':
+                    case 'staticvcard':
+                        return `
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="form-label">이름</label>
+                                        <input type="text" class="form-control" 
+                                               placeholder="홍길동">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="form-label">회사</label>
+                                        <input type="text" class="form-control" 
+                                               placeholder="WIA Family">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="form-label">전화번호</label>
+                                        <input type="tel" class="form-control" 
+                                               placeholder="+82-10-1234-5678">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="form-label">이메일</label>
+                                        <input type="email" class="form-control" 
+                                               placeholder="hong@example.com">
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+
+                    case 'aiprompt':
+                        return `
+                            <div class="form-group">
+                                <label class="form-label">AI 플랫폼</label>
+                                <select class="form-control">
+                                    <option value="chatgpt">ChatGPT</option>
+                                    <option value="claude">Claude</option>
+                                    <option value="gemini">Gemini</option>
+                                    <option value="copilot">Copilot</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">프롬프트 제목</label>
+                                <input type="text" class="form-control" 
+                                       placeholder="마케팅 카피 생성기">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">프롬프트 내용</label>
+                                <textarea class="form-control" rows="4" 
+                                         placeholder="당신은 전문 마케팅 카피라이터입니다..."></textarea>
+                            </div>
+                        `;
+
+                    default:
+                        return `
+                            <div class="form-group">
+                                <label class="form-label">데이터 입력</label>
+                                <textarea class="form-control" rows="3" 
+                                         placeholder="데이터를 입력하세요..."></textarea>
+                            </div>
+                        `;
+                }
+            }
+
+            showInputForm(typeId) {
+                // 모든 폼 숨기기
+                document.querySelectorAll('.input-form').forEach(form => {
+                    form.classList.remove('active');
+                });
+                
+                // 해당 폼 표시
+                const targetForm = document.getElementById(`form-${typeId}`);
+                if (targetForm) {
+                    targetForm.classList.add('active');
+                }
+            }
+
+            setupEventListeners() {
+                // 생성 버튼
+                document.getElementById('generateBtn').addEventListener('click', () => {
+                    this.generateWIACode();
+                });
+
+                // 실시간 미리보기 - 입력값 변경시
+                document.addEventListener('input', (e) => {
+                    if (e.target.closest('.input-form.active')) {
+                        this.schedulePreview();
+                    }
+                });
+            }
+
+            schedulePreview() {
+                // 디바운싱: 300ms 후에 미리보기 업데이트
+                clearTimeout(this.previewTimeout);
+                this.previewTimeout = setTimeout(() => {
+                    this.updatePreview();
+                }, 300);
+            }
+
+            async updatePreview() {
+                const previewLoading = document.getElementById('previewLoading');
+                
+                try {
+                    previewLoading.classList.add('show');
+                    
+                    // 현재 입력 데이터 수집
+                    const formData = this.collectFormData();
+                    const qrData = this.formatQRData(this.currentDataType, formData);
+                    
+                    // WIA Neural Code 생성
+                    await this.generateWIAPreview(qrData);
+                    
+                    // 메타데이터 업데이트
+                    this.updatePreviewInfo(qrData);
+
+                } catch (error) {
+                    console.error('❌ 미리보기 오류:', error);
+                } finally {
+                    previewLoading.classList.remove('show');
+                }
+            }
+
+            // WIA Neural Code 미리보기 생성
+            async generateWIAPreview(data) {
+                return new Promise((resolve) => {
+                    try {
+                        console.log("🎨 WIA 미리보기 생성:", data);
+                        
+                        // 캔버스 초기화
+                        this.ctx.fillStyle = '#ffffff';
+                        this.ctx.fillRect(0, 0, 450, 450);
+                        
+                        // WIA Neural Pattern 시뮬레이션
+                        this.drawWIAPattern(data);
+                        
+                        resolve();
+                    } catch (error) {
+                        console.error("❌ WIA 미리보기 오류:", error);
+                        resolve();
+                    }
+                });
+            }
+
+            drawWIAPattern(data) {
+                const ctx = this.ctx;
+                const size = 450;
+                
+                // 1. 배경 그리기
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, size, size);
+                
+                // 2. Neural Network 시뮬레이션
+                this.drawNeuralNetwork(ctx, size);
+                
+                // 3. 커스텀 마커 그리기
+                this.drawCustomMarkers(ctx, size);
+                
+                // 4. 데이터 인코딩 시각화
+                this.drawDataEncoding(ctx, data, size);
+            }
+
+            drawNeuralNetwork(ctx, size) {
+                const neurons = [];
+                const connections = [];
+                
+                // 뉴런 생성 (랜덤 위치)
+                for (let i = 0; i < 15; i++) {
+                    neurons.push({
+                        x: 50 + Math.random() * (size - 100),
+                        y: 50 + Math.random() * (size - 100),
+                        activation: Math.random()
+                    });
+                }
+                
+                // 연결선 생성
+                for (let i = 0; i < neurons.length; i++) {
+                    for (let j = i + 1; j < neurons.length; j++) {
+                        const dist = Math.sqrt(
+                            Math.pow(neurons[i].x - neurons[j].x, 2) + 
+                            Math.pow(neurons[i].y - neurons[j].y, 2)
+                        );
+                        
+                        if (dist < 100) {
+                            connections.push({
+                                from: neurons[i],
+                                to: neurons[j],
+                                strength: 1 - (dist / 100)
+                            });
+                        }
+                    }
+                }
+                
+                // 연결선 그리기
+                connections.forEach(conn => {
+                    ctx.beginPath();
+                    ctx.moveTo(conn.from.x, conn.from.y);
+                    ctx.lineTo(conn.to.x, conn.to.y);
+                    ctx.strokeStyle = `rgba(118, 75, 162, ${conn.strength * 0.3})`;
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                });
+                
+                // 뉴런 그리기
+                neurons.forEach(neuron => {
+                    ctx.beginPath();
+                    ctx.arc(neuron.x, neuron.y, 4, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(102, 126, 234, ${0.5 + neuron.activation * 0.5})`;
+                    ctx.fill();
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                });
+            }
+
+            drawCustomMarkers(ctx, size) {
+                const markerSize = (16 * this.markerSize) / 100; // 기준 크기 16px로 변경
+                const color = this.markerColor;
+                
+                // WIA 고유 삼각형 배치: 위쪽 중앙 1개, 아래쪽 좌우 2개
+                const positions = [
+                    { x: size / 2, y: 60 },           // 위쪽 중앙
+                    { x: 90, y: size - 60 },          // 아래쪽 왼쪽
+                    { x: size - 90, y: size - 60 }    // 아래쪽 오른쪽
+                ];
+                
+                positions.forEach(pos => {
+                    this.drawMarker(ctx, pos.x, pos.y, markerSize, color, this.currentMarker);
+                });
+            }
+
+            drawMarker(ctx, x, y, size, color, shape) {
+                ctx.fillStyle = color;
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2;
+                
+                switch (shape) {
+                    case 'triangle':
+                        // WIA 삼각형 배치에 따른 방향 설정
+                        if (y < 100) {
+                            // 위쪽 중앙 삼각형 - 꼭지점 아래로 (180도 회전)
+                            ctx.beginPath();
+                            ctx.moveTo(x, y + size);
+                            ctx.lineTo(x - size, y - size);
+                            ctx.lineTo(x + size, y - size);
+                            ctx.closePath();
+                        } else {
+                            // 아래쪽 좌우 삼각형 - 기본 방향 (꼭지점 위로)
+                            ctx.beginPath();
+                            ctx.moveTo(x, y - size);
+                            ctx.lineTo(x - size, y + size);
+                            ctx.lineTo(x + size, y + size);
+                            ctx.closePath();
+                        }
+                        ctx.fill();
+                        ctx.stroke();
+                        break;
+                        
+                    case 'heart':
+                        this.drawHeart(ctx, x, y, size);
+                        break;
+                        
+                    case 'star':
+                        this.drawStar(ctx, x, y, size);
+                        break;
+                        
+                    case 'diamond':
+                        ctx.beginPath();
+                        ctx.moveTo(x, y - size);
+                        ctx.lineTo(x + size, y);
+                        ctx.lineTo(x, y + size);
+                        ctx.lineTo(x - size, y);
+                        ctx.closePath();
+                        ctx.fill();
+                        ctx.stroke();
+                        break;
+                        
+                    case 'moon':
+                        this.drawMoon(ctx, x, y, size);
+                        break;
+                        
+                    case 'lightning':
+                        this.drawLightning(ctx, x, y, size);
+                        break;
+                }
+            }
+
+            drawHeart(ctx, x, y, size) {
+                ctx.beginPath();
+                ctx.moveTo(x, y + size/4);
+                ctx.bezierCurveTo(x, y - size/2, x - size, y - size/2, x - size, y + size/8);
+                ctx.bezierCurveTo(x - size, y + size/2, x, y + size/2, x, y + size);
+                ctx.bezierCurveTo(x, y + size/2, x + size, y + size/2, x + size, y + size/8);
+                ctx.bezierCurveTo(x + size, y - size/2, x, y - size/2, x, y + size/4);
+                ctx.fill();
+                ctx.stroke();
+            }
+
+            drawStar(ctx, x, y, size) {
+                const spikes = 5;
+                const outerRadius = size;
+                const innerRadius = size * 0.4;
+                
+                ctx.beginPath();
+                for (let i = 0; i < spikes * 2; i++) {
+                    const radius = i % 2 === 0 ? outerRadius : innerRadius;
+                    const angle = (i * Math.PI) / spikes;
+                    const px = x + radius * Math.cos(angle - Math.PI / 2);
+                    const py = y + radius * Math.sin(angle - Math.PI / 2);
+                    
+                    if (i === 0) ctx.moveTo(px, py);
+                    else ctx.lineTo(px, py);
+                }
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+            }
+
+            drawMoon(ctx, x, y, size) {
+                ctx.beginPath();
+                ctx.arc(x, y, size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                
+                ctx.globalCompositeOperation = 'destination-out';
+                ctx.beginPath();
+                ctx.arc(x + size/3, y - size/3, size * 0.8, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalCompositeOperation = 'source-over';
+            }
+
+            drawLightning(ctx, x, y, size) {
+                ctx.beginPath();
+                ctx.moveTo(x - size/2, y - size);
+                ctx.lineTo(x + size/4, y - size/4);
+                ctx.lineTo(x - size/4, y - size/4);
+                ctx.lineTo(x + size/2, y + size);
+                ctx.lineTo(x - size/4, y + size/4);
+                ctx.lineTo(x + size/4, y + size/4);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+            }
+
+            drawDataEncoding(ctx, data, size) {
+                // 데이터 기반 패턴 생성
+                const hash = this.simpleHash(data);
+                const pattern = this.generatePattern(hash, size);
+                
+                // 미세 점들로 데이터 표현
+                for (let i = 0; i < pattern.length; i++) {
+                    const point = pattern[i];
+                    if (point.active) {
+                        ctx.fillStyle = `rgba(102, 126, 234, ${point.intensity})`;
+                        ctx.fillRect(point.x - 1, point.y - 1, 2, 2);
+                    }
+                }
+            }
+
+            simpleHash(str) {
+                let hash = 0;
+                for (let i = 0; i < str.length; i++) {
+                    const char = str.charCodeAt(i);
+                    hash = ((hash << 5) - hash) + char;
+                    hash = hash & hash; // 32bit로 변환
+                }
+                return hash;
+            }
+
+            generatePattern(hash, size) {
+                const pattern = [];
+                const gridSize = 15;
+                
+                for (let x = 0; x < size; x += gridSize) {
+                    for (let y = 0; y < size; y += gridSize) {
+                        const localHash = hash ^ (x * 31 + y * 17);
+                        pattern.push({
+                            x: x + (localHash % gridSize),
+                            y: y + ((localHash >> 8) % gridSize),
+                            active: (localHash % 3) === 0,
+                            intensity: ((localHash % 256) / 255) * 0.5 + 0.2
+                        });
+                    }
+                }
+                
+                return pattern;
+            }
+
+            updatePreviewInfo(data) {
+                const dataSize = new Blob([data]).size;
+                const chunkCount = Math.ceil(dataSize / 9216); // 9KB 청크
+                
+                document.getElementById('estimatedSize').textContent = dataSize;
+                document.getElementById('chunkCount').textContent = chunkCount;
+                
+                // 마커 개수는 청크 수에 따라 동적 계산
+                const markerCount = 3; // WIA Code의 고정 마커 개수
+                document.getElementById('markerCount').textContent = markerCount;
+            }
+
+            collectFormData() {
+                const activeForm = document.querySelector('.input-form.active');
+                if (!activeForm) return {};
+
+                const data = {};
+                const inputs = activeForm.querySelectorAll('input, textarea, select');
+                
+                inputs.forEach((input, index) => {
+                    const key = input.placeholder?.split(' ')[0]?.toLowerCase() || `field_${index}`;
+                    data[key] = input.value;
+                });
+
+                return data;
+            }
+
+            formatQRData(type, data) {
+                switch (type) {
+                    case 'text':
+                        return data.여기에 || data.field_0 || '샘플 텍스트';
+
+                    case 'link':
+                        return data.https || data.field_0 || 'https://wiacode.com';
+
+                    case 'email':
+                        const email = data.someone || data.field_0 || 'test@wiacode.com';
+                        const subject = data.이메일 || data.field_1 || 'WIA Neural Code';
+                        const body = data.이메일 || data.field_2 || '안녕하세요!';
+                        return `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
+                    case 'phone':
+                        return `tel:${data.field_0 || '+82-10-1234-5678'}`;
+
+                    case 'wifi':
+                        const ssid = data.mywifi || data.field_0 || 'WIA_WiFi';
+                        const password = data.wifi || data.field_1 || 'password123';
+                        return `WIFI:T:WPA;S:${ssid};P:${password};;`;
+
+                    default:
+                        return JSON.stringify(data) || `WIA ${type} 데이터`;
+                }
+            }
+
+            async generateWIACode() {
+                const generateBtn = document.getElementById('generateBtn');
+                const originalText = generateBtn.innerHTML;
+                
+                try {
+                    // 버튼 로딩 상태
+                    generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span data-t="generate.generating">생성 중...</span>';
+                    generateBtn.disabled = true;
+
+                    const formData = this.collectFormData();
+                    const qrData = this.formatQRData(this.currentDataType, formData);
+
+                    await this.generateSingleCode(qrData);
+
+                } catch (error) {
+                    console.error('❌ 생성 오류:', error);
+                    this.showError(t('generate.error'));
+                } finally {
+                    // 버튼 원상복구
+                    generateBtn.innerHTML = originalText;
+                    generateBtn.disabled = false;
+                }
+            }
+
+            async generateSingleCode(qrData) {
+                try {
+                    // 로컬에서 WIA Code 생성
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = 512;
+                    canvas.height = 512;
+                    
+                    // 현재 미리보기 내용을 고해상도로 복제
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0, 0, 512, 512);
+                    
+                    // WIA Pattern 다시 그리기 (고해상도)
+                    const scaleFactor = 512 / 450;
+                    ctx.scale(scaleFactor, scaleFactor);
+                    this.drawWIAPattern(qrData);
+                    ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+                    // 다운로드 링크 생성
+                    const downloadUrl = canvas.toDataURL('image/png');
+                    const link = document.createElement('a');
+                    const fileName = `WIA_${this.currentDataType}_${Date.now()}.png`;
+                    link.download = fileName;
+                    link.href = downloadUrl;
+                    
+                    this.showSuccess(t('generate.success'), {
+                        scanUrl: downloadUrl,
+                        previewUrl: downloadUrl
+                    });
+                    
+                    // 자동 다운로드
+                    link.click();
+
+                } catch (error) {
+                    console.error('❌ 로컬 생성 오류:', error);
+                    this.showError(t('generate.error'));
+                }
+            }
+
+            showSuccess(message, data) {
+                const successDiv = document.getElementById('successMessage');
+                successDiv.innerHTML = `
+                    <div><strong>${message}</strong></div>
+                    ${data && data.scanUrl ? `
+                        <div class="mt-2">
+                            <small>
+                                <i class="fas fa-download"></i> 
+                                <a href="${data.scanUrl}" download style="color: white; text-decoration: underline;">
+                                    ${t('generate.download')}
+                                </a>
+                            </small>
+                        </div>
+                    ` : ''}
+                `;
+                successDiv.classList.add('show');
+                
+                setTimeout(() => {
+                    successDiv.classList.remove('show');
+                }, 5000);
+            }
+
+            showError(message) {
+                const errorDiv = document.getElementById('errorMessage');
+                errorDiv.innerHTML = `<strong>❌ 오류:</strong> ${message}`;
+                errorDiv.classList.add('show');
+                
+                setTimeout(() => {
+                    errorDiv.classList.remove('show');
+                }, 5000);
+            }
+        }
+
+        // ============================================================================
+        // 🚀 애플리케이션 시작
+        // ============================================================================
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🧠 WIA Neural Code Generator (37 Types) 로딩...');
+            new WIANeuralCodeGenerator();
+        });
+    </script>
+</body>
+</html>

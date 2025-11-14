@@ -1,0 +1,7 @@
+RewriteEngine Off
+
+<IfModule mod_headers.c>
+    Header set Access-Control-Allow-Origin "*"
+</IfModule>
+
+DirectoryIndex index.html

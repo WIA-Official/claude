@@ -1,0 +1,1664 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧠 WIA Neural Code Generator - 차세대 QR 코드 생성 시스템</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- QR Code 라이브러리 -->
+    <script src="./qrcode-fix.js"></script>
+    
+    <style>
+        :root {
+            --wia-primary: #667eea;
+            --wia-secondary: #764ba2;
+            --wia-success: #4caf50;
+            --wia-warning: #ff9800;
+            --wia-danger: #f44336;
+            --wia-dark: #212529;
+            --wia-light: #f8f9fa;
+        }
+
+        * {
+            transition: all 0.3s ease;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .main-container {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            margin: 20px auto;
+            max-width: 1400px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header-section {
+            background: linear-gradient(135deg, var(--wia-primary) 0%, var(--wia-secondary) 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        .header-section::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><polygon points="50,15 85,75 15,75" fill="rgba(255,255,255,0.1)"/></svg>') repeat;
+            background-size: 50px 50px;
+            opacity: 0.1;
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        .main-title {
+            font-size: 3rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 20px;
+        }
+
+        .features-badges {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .feature-badge {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 16px;
+            border-radius: 25px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .content-area {
+            padding: 40px;
+        }
+
+        .form-section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(102, 126, 234, 0.1);
+        }
+
+        .section-title {
+            color: var(--wia-primary);
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* 데이터 타입 선택기 - WIA Go 스타일 개선 */
+        .type-selector {
+            margin-bottom: 20px;
+        }
+
+        .type-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .tab-btn {
+            padding: 10px 20px;
+            border: 2px solid #e9ecef;
+            background: white;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: transparent;
+        }
+
+        .type-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 15px;
+        }
+
+        .type-card {
+            padding: 20px;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: white;
+        }
+
+        .type-card:hover {
+            border-color: var(--wia-primary);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+        }
+
+        .type-card.selected {
+            border-color: var(--wia-primary);
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+        }
+
+        .type-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .type-name {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .type-desc {
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+
+        /* 동적 입력 폼 */
+        .input-form {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 25px;
+            margin-top: 20px;
+            border-left: 4px solid var(--wia-primary);
+            display: none;
+        }
+
+        .input-form.active {
+            display: block;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: var(--wia-dark);
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .form-control {
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 12px;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+        }
+
+        .form-control:focus {
+            border-color: var(--wia-primary);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            outline: none;
+        }
+
+        /* 언어 선택기 */
+        .language-selector {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .language-select {
+            position: relative;
+        }
+
+        .translate-btn {
+            background: linear-gradient(135deg, var(--wia-primary), var(--wia-secondary));
+            border: none;
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .translate-btn:hover {
+            transform: scale(1.1) rotate(180deg);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        /* 배치 생성 모드 */
+        .batch-mode {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .batch-mode.active {
+            display: block;
+        }
+
+        .batch-item {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* 실시간 미리보기 */
+        .preview-panel {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            position: sticky;
+            top: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(102, 126, 234, 0.1);
+        }
+
+        .preview-canvas-container {
+        }
+        
+        .preview-controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 5px;
+            z-index: 20;
+        }
+        
+        .btn-icon {
+            width: 32px;
+            height: 32px;
+            border: none;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.9);
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .btn-icon:hover {
+        }
+        
+        .marker-selector {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .marker-option {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+            background: white;
+        }
+        
+        .marker-option:hover {
+            border-color: var(--wia-primary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .marker-option.active {
+            border-color: var(--wia-primary);
+            background: linear-gradient(135deg, var(--wia-primary), var(--wia-secondary));
+            color: white;
+            font-weight: bold;
+        }
+            background: white;
+            transform: scale(1.1);
+        }
+            position: relative;
+            width: 480px;
+            height: 480px;
+            margin: 20px auto;
+            border: 2px dashed #e9ecef;
+            border-radius: 15px;
+            background: white;
+            overflow: hidden;
+        }
+
+        #wiaCanvas {
+            width: 100%;
+            height: 100%;
+        }
+
+
+
+        .triangle-top {
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-bottom: 25px solid var(--wia-primary);
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .triangle-left {
+            border-top: 15px solid transparent;
+            border-bottom: 15px solid transparent;
+            border-right: 25px solid var(--wia-secondary);
+            bottom: 10px;
+            left: 10px;
+        }
+
+        .triangle-right {
+            border-top: 15px solid transparent;
+            border-bottom: 15px solid transparent;
+            border-left: 25px solid var(--wia-success);
+            bottom: 10px;
+            right: 10px;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.7; transform: scale(1) translateX(-50%); }
+            50% { opacity: 1; transform: scale(1.1) translateX(-50%); }
+        }
+
+        /* 생성 섹션 */
+        .generate-section {
+            padding: 30px;
+            background: linear-gradient(135deg, var(--wia-primary) 0%, var(--wia-secondary) 100%);
+            text-align: center;
+        }
+
+        .generate-btn {
+            background: white;
+            color: var(--wia-primary);
+            border: none;
+            padding: 15px 40px;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .generate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .generate-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* 로딩 및 메시지 */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading.show { display: block; }
+
+        .spinner {
+            width: 40px; height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--wia-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .alert {
+            padding: 15px; border-radius: 10px; margin-top: 20px;
+            display: none;
+        }
+
+        .alert.show {
+            display: block;
+            animation: slideUp 0.5s ease;
+        }
+
+        .alert-success { background: var(--wia-success); color: white; }
+        .alert-danger { background: var(--wia-danger); color: white; }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 모바일 최적화 */
+        @media (max-width: 768px) {
+            .main-title { font-size: 2rem; }
+            .content-area { padding: 20px; }
+            .language-selector { grid-template-columns: 1fr; gap: 10px; }
+            .type-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+    <!-- WIA Neural Engine -->
+    <script src="./assets/js/wia-engine-BEAUTIFUL-QR.js"></script>
+</head>
+<body>
+    <div class="main-container">
+        <!-- 헤더 섹션 -->
+        <div class="header-section">
+            <div class="header-content">
+                <h1 class="main-title">🧠 WIA Neural Code</h1>
+                <p class="subtitle">차세대 WIA Code 생성 시스템</p>
+                <div class="features-badges">
+                    <div class="feature-badge">🎯 14개 데이터 타입</div>
+                    <div class="feature-badge">🌍 211개 언어 지원</div>
+                    <div class="feature-badge">📊 9KB 정확한 인코딩</div>
+                    <div class="feature-badge">🔺 삼각형 마커 시스템</div>
+                    <div class="feature-badge">⚡ 실시간 미리보기</div>
+                    <div class="feature-badge">🚀 배치 일괄 생성</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-area">
+            <div class="row">
+                <!-- 왼쪽: 입력 폼 -->
+                <div class="col-lg-7">
+                    <!-- 1. 기본 설정 -->
+                    <div class="form-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-cog"></i>
+                            기본 설정
+                        </h3>
+                        
+                        <div class="form-group">
+                            <label class="form-label">코드 이름</label>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">마커 모양 선택</label>
+                            <div class="marker-selector">
+                                <div class="marker-option active" data-marker="triangle">🔺 삼각형</div>
+                                <div class="marker-option" data-marker="heart">❤️ 하트</div>
+                                <div class="marker-option" data-marker="star">⭐ 별</div>
+                                <div class="marker-option" data-marker="diamond">◆ 다이아몬드</div>
+                                <div class="marker-option" data-marker="moon">🌙 달</div>
+                                <div class="marker-option" data-marker="lightning">⚡ 번개</div>
+                            </div>
+                            <input type="text" id="codeName" class="form-control" 
+                                   placeholder="예: Instagram 프로필 WIA">
+                        </div>
+
+                        <!-- 데이터 타입 선택기 -->
+                        <div class="type-selector">
+                            <label class="form-label">데이터 타입 선택</label>
+                            
+                            <div class="type-tabs">
+                                <button class="tab-btn active" data-category="static">정적 WIA</button>
+                                <button class="tab-btn" data-category="dynamic">동적 WIA</button>
+                            </div>
+                            
+                            <div class="type-grid" id="typeGrid">
+                                <!-- JavaScript로 동적 생성 -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. 언어 설정 -->
+                    <div class="form-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-globe"></i>
+                            언어 설정 (211개 언어 지원)
+                        </h3>
+                        
+                        <div class="language-selector">
+                            <div class="language-select">
+                                <label class="form-label">소스 언어</label>
+                                <select id="sourceLang" class="form-control">
+                                    <option value="ko">한국어</option>
+                                    <option value="en">English</option>
+                                    <option value="zh">中文</option>
+                                    <option value="ja">日本語</option>
+                                </select>
+                            </div>
+                            
+                            <button type="button" class="translate-btn" id="translateBtn">
+                                <i class="fas fa-exchange-alt"></i>
+                            </button>
+                            
+                            <div class="language-select">
+                                <label class="form-label">대상 언어</label>
+                                <select id="targetLang" class="form-control">
+                                    <option value="en">English</option>
+                                    <option value="ko">한국어</option>
+                                    <option value="zh">中文</option>
+                                    <option value="ja">日本語</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. 데이터 입력 폼들 (동적 생성) -->
+                    <div class="form-section" id="dataInputSection">
+                        <h3 class="section-title">
+                            <i class="fas fa-edit"></i>
+                            데이터 입력
+                        </h3>
+                        
+                        <!-- 각 타입별 입력 폼들 -->
+                        <div id="inputForms">
+                            <!-- JavaScript로 동적 생성 -->
+                        </div>
+                    </div>
+
+                    <!-- 4. 배치 생성 모드 -->
+                    <div class="batch-mode" id="batchMode">
+                        <h4><i class="fas fa-layer-group"></i> 배치 생성 모드</h4>
+                        <p>여러 개의 WIA Neural Code를 한 번에 생성합니다.</p>
+                        <div id="batchItems"></div>
+                        <button type="button" class="btn btn-light mt-2" id="addBatchItem">
+                            <i class="fas fa-plus"></i> 항목 추가
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 오른쪽: 미리보기 -->
+                <div class="col-lg-5">
+                    <div class="preview-panel">
+                        <h3 class="section-title">
+                            <i class="fas fa-eye"></i>
+                            실시간 미리보기
+                        </h3>
+                        
+                        <div class="preview-canvas-container">
+                            <div class="preview-controls">
+                                <button id="zoomInBtn" class="btn-icon" title="확대">🔍+</button>
+                                <button id="zoomOutBtn" class="btn-icon" title="축소">🔍-</button>
+                                <button id="fullscreenBtn" class="btn-icon" title="전체화면">⛶</button>
+                            </div>
+                            <canvas id="wiaCanvas" width="480" height="480"></canvas>
+                            </div>
+                        </div>
+                        
+                        <div class="loading" id="previewLoading">
+                            <div class="spinner"></div>
+                            <p>미리보기 생성 중...</p>
+                        </div>
+                        
+                        <!-- 미리보기 정보 -->
+                        <div class="mt-3" id="previewInfo">
+                            <div class="row text-center">
+                                <div class="col-4">
+                                    <strong id="estimatedSize">0</strong>
+                                    <br><small>바이트</small>
+                                </div>
+                                <div class="col-4">
+                                    <strong id="chunkCount">0</strong>
+                                    <br><small>청크</small>
+                                </div>
+                                <div class="col-4">
+                                    <strong id="markerCount">3</strong>
+                                    <br><small>마커</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 생성 섹션 -->
+        <div class="generate-section">
+            <button type="button" class="generate-btn" id="generateBtn">
+                <i class="fas fa-magic"></i>
+                WIA Neural Code 생성하기
+            </button>
+            
+            <div class="mt-3">
+                <input type="checkbox" id="batchModeToggle" class="me-2">
+                <label for="batchModeToggle" style="color: rgba(255,255,255,0.8);">배치 생성 모드</label>
+            </div>
+            
+            <div class="alert alert-success" id="successMessage"></div>
+            <div class="alert alert-danger" id="errorMessage"></div>
+        </div>
+    </div>
+
+    <!-- JavaScript 시작 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // ============================================================================
+        // 🧠 WIA Neural Code Generator - Complete Implementation
+        // ============================================================================
+
+        class WIANeuralCodeGenerator {
+            constructor() {
+                this.apiUrl = 'http://localhost:3002/api/wia';
+                this.currentDataType = 'text';
+                this.currentCategory = 'static';
+                this.previewTimeout = null;
+                this.qrCodeInstance = null;
+                
+                // 14가지 데이터 타입 정의
+                this.dataTypes = {
+                    // Static QR (추적 불가)
+                    'text': { icon: '📝', name: '텍스트', desc: '일반 텍스트 메시지', category: 'static' },
+                    'sms': { icon: '💬', name: 'SMS & 메시지', desc: 'SMS 문자 메시지', category: 'static' },
+                    'wifi': { icon: '📶', name: 'WiFi', desc: 'WiFi 네트워크 정보', category: 'static' },
+                    'staticvcard': { icon: '👤', name: '정적 vCard', desc: '정적 연락처 카드', category: 'static' },
+                    'event': { icon: '📅', name: '이벤트', desc: '캘린더 일정', category: 'static' },
+                    
+                    // Dynamic QR (추적 가능)
+                    'link': { icon: '🔗', name: '링크', desc: '웹사이트 URL', category: 'dynamic' },
+                    'email': { icon: '📧', name: '이메일', desc: '이메일 주소와 내용', category: 'dynamic' },
+                    'phone': { icon: '📞', name: '전화', desc: '전화번호 다이얼', category: 'dynamic' },
+                    'smsonly': { icon: '📱', name: 'SMS', desc: 'SMS 전용', category: 'dynamic' },
+                    'vcard': { icon: '👥', name: 'vCard', desc: '동적 연락처 카드', category: 'dynamic' },
+                    'application': { icon: '📱', name: '앱 스토어', desc: 'App Store 링크', category: 'dynamic' },
+                    'file': { icon: '📎', name: '파일', desc: '파일 업로드', category: 'dynamic' },
+                    'whatsapp': { icon: '💚', name: 'WhatsApp', desc: 'WhatsApp 메시지', category: 'dynamic' },
+                    'crypto': { icon: '₿', name: '암호화폐', desc: '지갑 주소', category: 'dynamic' },
+                    
+                    // 미래형 정적 타입
+                    'dna': { icon: '🧬', name: 'DNA 정보', desc: '유전자 정보, 혈통', category: 'static' },
+                    'medical': { icon: '🏥', name: '의료 정보', desc: '응급 의료, 알레르기', category: 'static' },
+                    'gps': { icon: '🌍', name: 'WIA PIN Code', desc: '정확한 위치 정보', category: 'static' },
+                    'key': { icon: '🔐', name: '암호화 키', desc: '공개키, 디지털 서명', category: 'static' },
+                    'iot': { icon: '📊', name: 'IoT 설정', desc: '스마트홈 기기 설정', category: 'static' },
+                    'ticket': { icon: '🎫', name: '티켓/패스', desc: '항공권, 콘서트 티켓', category: 'static' },
+                    
+                    // 미래형 동적 타입
+                    'aiprompt': { icon: '🤖', name: 'AI 프롬프트', desc: 'ChatGPT/Claude 템플릿', category: 'dynamic' },
+                    'game': { icon: '🎮', name: '게임 초대', desc: '멀티플레이어 게임 방', category: 'dynamic' },
+                    'prescription': { icon: '💊', name: '디지털 처방전', desc: '처방전 및 복용법', category: 'dynamic' },
+                    'store': { icon: '🏪', name: '상점 정보', desc: '실시간 재고, 할인', category: 'dynamic' },
+                    'vehicle': { icon: '🚗', name: '차량 정보', desc: 'CarPlay 연결', category: 'dynamic' },
+                    'bluetooth': { icon: '📡', name: '블루투스', desc: '즉시 디바이스 연결', category: 'dynamic' },
+                    'human': { icon: '🧠', name: '휴먼 증명', desc: '로봇 vs 인간 구분', category: 'static' }
+                };
+
+                // 211개 언어 지원 (주요 언어들)
+                this.languages = {
+                    'ko': '한국어', 'en': 'English', 'zh': '中文', 'ja': '日本語',
+                    'es': 'Español', 'fr': 'Français', 'de': 'Deutsch', 'ru': 'Русский',
+                    'ar': 'العربية', 'hi': 'हिन्दी', 'pt': 'Português', 'it': 'Italiano',
+                    'nl': 'Nederlands', 'tr': 'Türkçe', 'pl': 'Polski', 'th': 'ไทย',
+                    'vi': 'Tiếng Việt', 'id': 'Bahasa Indonesia', 'ms': 'Bahasa Melayu'
+                };
+                
+                this.init();
+            }
+
+            async init() {
+                console.log('🧠 WIA Neural Code Generator 초기화 중...');
+                
+                try {
+                    this.setupCanvas();
+                    this.renderDataTypes();
+                    this.setupEventListeners();
+                    this.renderInputForms();
+                    this.updatePreview();
+                    
+                    console.log('✅ 초기화 완료! WIA Go를 압도할 준비 완료!');
+                } catch (error) {
+                    console.error('❌ 초기화 오류:', error);
+                    this.showError('시스템 초기화 중 오류가 발생했습니다.');
+                }
+            }
+
+            setupCanvas() {
+                this.canvas = document.getElementById("wiaCanvas");
+                this.ctx = this.canvas.getContext("2d");
+                
+                // WIA Neural Engine이 Canvas 크기를 설정함
+                // 초기 배경 설정
+                this.ctx.fillStyle = "#f8f9fa";
+                this.ctx.fillRect(0, 0, 480, 480);
+            }
+
+            renderDataTypes() {
+                const typeGrid = document.getElementById('typeGrid');
+                const tabBtns = document.querySelectorAll('.tab-btn');
+                
+                // 탭 이벤트 리스너
+                tabBtns.forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        tabBtns.forEach(b => b.classList.remove('active'));
+                        e.target.classList.add('active');
+                        this.currentCategory = e.target.dataset.category;
+                        this.renderTypeCards();
+                    });
+                });
+                
+                this.renderTypeCards();
+            }
+
+            renderTypeCards() {
+                const typeGrid = document.getElementById('typeGrid');
+                const filteredTypes = Object.entries(this.dataTypes)
+                    .filter(([id, type]) => type.category === this.currentCategory);
+                
+                typeGrid.innerHTML = filteredTypes.map(([id, type]) => `
+                    <div class="type-card ${id === this.currentDataType ? 'selected' : ''}" 
+                         data-type="${id}">
+                        <span class="type-icon">${type.icon}</span>
+                        <div class="type-name">${type.name}</div>
+                        <div class="type-desc">${type.desc}</div>
+                    </div>
+                `).join('');
+
+                // 카드 클릭 이벤트
+                typeGrid.addEventListener('click', (e) => {
+                    const card = e.target.closest('.type-card');
+                    if (card) {
+                        this.selectDataType(card.dataset.type);
+                    }
+                });
+            }
+
+            selectDataType(typeId) {
+                this.currentDataType = typeId;
+                
+                // 선택된 카드 스타일 업데이트
+                document.querySelectorAll('.type-card').forEach(card => {
+                    card.classList.remove('selected');
+                });
+                document.querySelector(`[data-type="${typeId}"]`).classList.add('selected');
+                
+                // 입력 폼 업데이트
+                this.showInputForm(typeId);
+                this.schedulePreview();
+            }
+
+            renderInputForms() {
+                const formsContainer = document.getElementById('inputForms');
+                
+                // 모든 타입별 입력 폼 생성
+                Object.keys(this.dataTypes).forEach(typeId => {
+                    const formHtml = this.generateInputForm(typeId);
+                    formsContainer.innerHTML += `
+                        <div class="input-form" id="form-${typeId}">
+                            ${formHtml}
+                        </div>
+                    `;
+                });
+                
+                // 기본 텍스트 폼 활성화
+                this.showInputForm('text');
+            }
+
+            generateInputForm(typeId) {
+                switch (typeId) {
+                    case 'text':
+                        return `
+                            <div class="form-group">
+                                <label class="form-label">텍스트 내용</label>
+                                <textarea class="form-control" rows="4" 
+                                         placeholder="여기에 텍스트를 입력하세요..."></textarea>
+                            </div>
+                        `;
+
+                    case 'link':
+                        return `
+                            <div class="form-group">
+                                <label class="form-label">웹사이트 URL</label>
+                                <input type="url" class="form-control" 
+                                       placeholder="https://example.com">
+                            </div>
+                        `;
+
+                    case 'email':
+                        return `
+                            <div class="form-group">
+                                <label class="form-label">이메일 주소</label>
+                                <input type="email" class="form-control" 
+                                       placeholder="someone@example.com">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">제목</label>
+                                <input type="text" class="form-control" 
+                                       placeholder="이메일 제목">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">메시지</label>
+                                <textarea class="form-control" rows="3" 
+                                         placeholder="이메일 내용..."></textarea>
+                            </div>
+                        `;
+
+                    case 'phone':
+                        return `
+                            <div class="form-group">
+                                <label class="form-label">전화번호</label>
+                                <input type="tel" class="form-control" 
+                                       placeholder="+82-10-1234-5678">
+                            </div>
+                        `;
+
+                    case 'sms':
+                    case 'smsonly':
+                        return `
+                            <div class="form-group">
+                                <label class="form-label">전화번호</label>
+                                <input type="tel" class="form-control" 
+                                       placeholder="+82-10-1234-5678">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">SMS 메시지</label>
+                                <textarea class="form-control" rows="3" 
+                                         placeholder="SMS 내용..."></textarea>
+                            </div>
+                        `;
+
+                    case 'wifi':
+                        return `
+                            <div class="form-group">
+                                <label class="form-label">네트워크 이름 (SSID)</label>
+                                <input type="text" class="form-control" 
+                                       placeholder="MyWiFi">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">비밀번호</label>
+                                <input type="password" class="form-control" 
+                                       placeholder="WiFi 비밀번호">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">암호화 방식</label>
+                                <select class="form-control">
+                                    <option value="WPA">WPA/WPA2</option>
+                                    <option value="WEP">WEP</option>
+                                    <option value="nopass">암호화 없음</option>
+                                </select>
+                            </div>
+                        `;
+
+                    case 'vcard':
+                    case 'staticvcard':
+                        return `
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="form-label">이름</label>
+                                        <input type="text" class="form-control" 
+                                               placeholder="홍길동">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="form-label">성</label>
+                                        <input type="text" class="form-control" 
+                                               placeholder="홍">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">회사/조직</label>
+                                <input type="text" class="form-control" 
+                                       placeholder="WIA Family">
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="form-label">전화번호</label>
+                                        <input type="tel" class="form-control" 
+                                               placeholder="+82-10-1234-5678">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="form-label">이메일</label>
+                                        <input type="email" class="form-control" 
+                                               placeholder="hong@example.com">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">웹사이트</label>
+                                <input type="url" class="form-control" 
+                                       placeholder="https://wiacode.com">
+                            </div>
+                        `;
+
+                    case 'event':
+                        return `
+                            <div class="form-group">
+                                <label class="form-label">이벤트 제목</label>
+                                <input type="text" class="form-control" 
+                                       placeholder="회의 제목">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">설명</label>
+                                <textarea class="form-control" rows="2" 
+                                         placeholder="이벤트 설명..."></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">장소</label>
+                                <input type="text" class="form-control" 
+                                       placeholder="서울시 강남구...">
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="form-label">시작 시간</label>
+                                        <input type="datetime-local" class="form-control">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="form-label">종료 시간</label>
+                                        <input type="datetime-local" class="form-control">
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+
+                    case 'whatsapp':
+                        return `
+                            <div class="form-group">
+                                <label class="form-label">WhatsApp 번호</label>
+                                <input type="tel" class="form-control" 
+                                       placeholder="+82-10-1234-5678">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">메시지</label>
+                                <textarea class="form-control" rows="3" 
+                                         placeholder="WhatsApp 메시지..."></textarea>
+                            </div>
+                        `;
+
+                    case 'crypto':
+                        return `
+                            <div class="form-group">
+                                <label class="form-label">암호화폐 종류</label>
+                                <select class="form-control">
+                                    <option value="bitcoin">Bitcoin (BTC)</option>
+                                    <option value="ethereum">Ethereum (ETH)</option>
+                                    <option value="litecoin">Litecoin (LTC)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">지갑 주소</label>
+                                <input type="text" class="form-control" 
+                                       placeholder="지갑 주소를 입력하세요...">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">금액 (선택사항)</label>
+                                <input type="number" class="form-control" 
+                                       placeholder="0.001" step="0.000001">
+                            </div>
+                        `;
+
+                    case 'application':
+                        return `
+                            <div class="form-group">
+                                <label class="form-label">App Store 링크</label>
+                                <input type="url" class="form-control" 
+                                       placeholder="https://apps.apple.com/...">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Google Play 링크</label>
+                                <input type="url" class="form-control" 
+                                       placeholder="https://play.google.com/...">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">기타 플랫폼 링크</label>
+                                <input type="url" class="form-control" 
+                                       placeholder="https://...">
+                            </div>
+                        `;
+
+                    case 'file':
+                        return `
+                            <div class="form-group">
+                                <label class="form-label">파일 업로드</label>
+                                <input type="file" class="form-control" 
+                                       accept=".jpg,.jpeg,.png,.gif,.pdf">
+                                <small class="form-text text-muted">
+                                    JPG, PNG, GIF, PDF 파일만 지원됩니다.
+                                </small>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">또는 파일 URL</label>
+                                <input type="url" class="form-control" 
+                                       placeholder="https://example.com/file.pdf">
+                            </div>
+                        `;
+
+                    default:
+                        return `
+                            <div class="form-group">
+                                <label class="form-label">데이터 입력</label>
+                                <textarea class="form-control" rows="3" 
+                                         placeholder="데이터를 입력하세요..."></textarea>
+                            </div>
+                        `;
+                }
+            }
+
+            showInputForm(typeId) {
+                // 모든 폼 숨기기
+                document.querySelectorAll('.input-form').forEach(form => {
+                    form.classList.remove('active');
+                });
+                
+                // 해당 폼 표시
+                const targetForm = document.getElementById(`form-${typeId}`);
+                if (targetForm) {
+                    targetForm.classList.add('active');
+                }
+            }
+
+            setupEventListeners() {
+                // 배치 모드 토글
+                document.getElementById('batchModeToggle').addEventListener('change', (e) => {
+                    const batchMode = document.getElementById('batchMode');
+                    if (e.target.checked) {
+                        batchMode.classList.add('active');
+                    } else {
+                        batchMode.classList.remove('active');
+                    }
+                });
+
+                // 생성 버튼
+                document.getElementById('generateBtn').addEventListener('click', () => {
+                    this.generateWIACode();
+                });
+
+                // 번역 버튼
+                document.getElementById('translateBtn').addEventListener('click', () => {
+                    this.translateContent();
+                });
+
+                // 실시간 미리보기 - 입력값 변경시
+                document.addEventListener('input', (e) => {
+                    if (e.target.closest('.input-form.active') || 
+                        e.target.closest('.language-selector')) {
+                        this.schedulePreview();
+                    }
+                });
+
+                // 파일 업로드 처리
+                document.addEventListener('change', (e) => {
+                    if (e.target.type === 'file') {
+                        this.handleFileUpload(e.target);
+                    }
+                });
+            }
+
+            schedulePreview() {
+                // 디바운싱: 300ms 후에 미리보기 업데이트
+                clearTimeout(this.previewTimeout);
+                this.previewTimeout = setTimeout(() => {
+                    this.updatePreview();
+                }, 300);
+            }
+
+            async updatePreview() {
+                const previewLoading = document.getElementById('previewLoading');
+                
+                try {
+                    previewLoading.classList.add('show');
+                    
+                    // 현재 입력 데이터 수집
+                    const formData = this.collectFormData();
+                    const qrData = this.formatQRData(this.currentDataType, formData);
+                    
+                    // QR 코드 생성
+                    await this.generateWIAPreview(qrData);
+                    
+                    // 삼각형 마커 업데이트
+                    
+                    // 메타데이터 업데이트
+                    this.updatePreviewInfo(qrData);
+
+                } catch (error) {
+                    console.error('❌ 미리보기 오류:', error);
+                } finally {
+                    previewLoading.classList.remove('show');
+                }
+            }
+
+            // WIA Neural Code 미리보기 생성 (QR 대신)
+            async generateWIAPreview(data) {
+                return new Promise((resolve) => {
+                    try {
+                        console.log("🎨 WIA 미리보기 생성:", data);
+                        
+                        // WIA Neural Engine이 없으면 생성
+                        if (!this.wiaEngine) {
+                            this.wiaEngine = new WIANeuralEngine(this.canvas);
+                        }
+                        
+                        // WIA Neural Code 생성
+                        this.wiaEngine.generate(data || "샘플 텍스트", "complex", "high");
+                        
+                        resolve();
+                    } catch (error) {
+                        console.error("❌ WIA 미리보기 오류:", error);
+                        resolve();
+                    }
+                });
+            }
+
+
+            updatePreviewInfo(data) {
+                const dataSize = new Blob([data]).size;
+                const chunkCount = Math.ceil(dataSize / 9216); // 9KB 청크
+                
+                document.getElementById('estimatedSize').textContent = dataSize;
+                document.getElementById('chunkCount').textContent = chunkCount;
+                
+                // 마커 개수는 청크 수에 따라 동적 계산
+                const markerCount = 3; // WIA Code의 고정 마커 개수
+                document.getElementById('markerCount').textContent = markerCount;
+            }
+
+            collectFormData() {
+                const activeForm = document.querySelector('.input-form.active');
+                if (!activeForm) return {};
+
+                const data = {};
+                const inputs = activeForm.querySelectorAll('input, textarea, select');
+                
+                inputs.forEach((input, index) => {
+                    const key = input.placeholder?.split(' ')[0]?.toLowerCase() || `field_${index}`;
+                    data[key] = input.value;
+                });
+
+                return data;
+            }
+
+            formatQRData(type, data) {
+                switch (type) {
+                    case 'text':
+                        return data.여기에 || data.field_0 || '샘플 텍스트';
+
+                    case 'link':
+                        return data.https || data.field_0 || 'https://wiacode.com';
+
+                    case 'email':
+                        const email = data.someone || data.field_0 || 'test@wiacode.com';
+                        const subject = data.이메일 || data.field_1 || 'WIA Neural Code';
+                        const body = data.이메일 || data.field_2 || '안녕하세요!';
+                        return `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
+                    case 'phone':
+                        return `tel:${data.field_0 || '+82-10-1234-5678'}`;
+
+                    case 'sms':
+                    case 'smsonly':
+                        const phone = data.field_0 || '+82-10-1234-5678';
+                        const message = data.sms || data.field_1 || '안녕하세요!';
+                        return `sms:${phone}?body=${encodeURIComponent(message)}`;
+
+                    case 'wifi':
+                        const ssid = data.mywifi || data.field_0 || 'WIA_WiFi';
+                        const password = data.wifi || data.field_1 || 'password123';
+                        const encryption = data.field_2 || 'WPA';
+                        return `WIFI:T:${encryption};S:${ssid};P:${password};;`;
+
+                    case 'vcard':
+                    case 'staticvcard':
+                        const firstName = data.홍길동 || data.field_0 || '홍길동';
+                        const lastName = data.홍 || data.field_1 || '홍';
+                        const org = data.wia || data.field_2 || 'WIA Family';
+                        const tel = data.field_3 || '+82-10-1234-5678';
+                        const email_vcard = data.field_4 || 'hong@wiacode.com';
+                        const website = data.field_5 || 'https://wiacode.com';
+                        
+                        return `BEGIN:VCARD
+VERSION:3.0
+FN:${firstName} ${lastName}
+N:${lastName};${firstName};;;
+ORG:${org}
+TEL:${tel}
+EMAIL:${email_vcard}
+URL:${website}
+END:VCARD`;
+
+                    case 'whatsapp':
+                        const whatsappPhone = data.field_0 || '+82-10-1234-5678';
+                        const whatsappMsg = data.whatsapp || data.field_1 || 'WIA Neural Code에서 인사드립니다!';
+                        return `https://wa.me/${whatsappPhone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(whatsappMsg)}`;
+
+                    case 'crypto':
+                        const coin = data.field_0 || 'bitcoin';
+                        const address = data.지갑 || data.field_1 || '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa';
+                        const amount = data.field_2 || '';
+                        return amount ? `${coin}:${address}?amount=${amount}` : `${coin}:${address}`;
+
+                    case 'application':
+                        const appleUrl = data.field_0;
+                        const googleUrl = data.field_1;
+                        const otherUrl = data.field_2;
+                        return appleUrl || googleUrl || otherUrl || 'https://apps.apple.com/';
+
+                    default:
+                        return JSON.stringify(data);
+                }
+            }
+
+            async translateContent() {
+                try {
+                    const sourceLang = document.getElementById('sourceLang').value;
+                    const targetLang = document.getElementById('targetLang').value;
+                    
+                    if (sourceLang === targetLang) {
+                        this.showError('소스 언어와 대상 언어가 같습니다.');
+                        return;
+                    }
+
+                    // 번역 버튼 회전 애니메이션
+                    const translateBtn = document.getElementById('translateBtn');
+                    translateBtn.style.transform = 'scale(1.1) rotate(180deg)';
+                    
+                    setTimeout(() => {
+                        translateBtn.style.transform = '';
+                        this.showSuccess('번역 기능은 곧 추가됩니다! 현재는 211개 언어 인터페이스를 지원합니다.', {});
+                    }, 500);
+
+                } catch (error) {
+                    console.error('❌ 번역 오류:', error);
+                    this.showError('번역 중 오류가 발생했습니다.');
+                }
+            }
+
+            async handleFileUpload(fileInput) {
+                const file = fileInput.files[0];
+                if (!file) return;
+
+                try {
+                    // 파일 크기 체크 (9KB 제한)
+                    if (file.size > 9216) {
+                        this.showError('파일 크기가 9KB를 초과합니다.');
+                        fileInput.value = '';
+                        return;
+                    }
+
+                    // 파일을 Base64로 변환
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const base64Data = e.target.result;
+                        console.log('파일 업로드 완료:', file.name, file.size, 'bytes');
+                        this.schedulePreview();
+                    };
+                    reader.readAsDataURL(file);
+
+                } catch (error) {
+                    console.error('❌ 파일 업로드 오류:', error);
+                    this.showError('파일 업로드 중 오류가 발생했습니다.');
+                }
+            }
+
+            async generateWIACode() {
+                const generateBtn = document.getElementById('generateBtn');
+                const originalText = generateBtn.innerHTML;
+                
+                try {
+                    // 버튼 로딩 상태
+                    generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 생성 중...';
+                    generateBtn.disabled = true;
+
+                    const formData = this.collectFormData();
+                    const qrData = this.formatQRData(this.currentDataType, formData);
+
+                    // 배치 모드 체크
+                    const isBatchMode = document.getElementById('batchModeToggle').checked;
+                    
+                    if (isBatchMode) {
+                        await this.generateBatchCodes();
+                    } else {
+                        await this.generateSingleCode(qrData);
+                    }
+
+                } catch (error) {
+                    console.error('❌ 생성 오류:', error);
+                    this.showError('WIA Neural Code 생성 중 오류가 발생했습니다.');
+                } finally {
+                    // 버튼 원상복구
+                    generateBtn.innerHTML = originalText;
+                    generateBtn.disabled = false;
+                }
+            }
+
+            async generateSingleCode(qrData) {
+                try {
+                    // 백엔드 API 호출 시도
+                    const response = await fetch(`${this.apiUrl}/generate`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            name: document.getElementById('codeName').value || `WIA_${this.currentDataType}_${Date.now()}`,
+                            dataType: this.currentDataType,
+                            data: this.collectFormData(),
+                            qrData: qrData
+                        })
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        this.showSuccess(result.message || '🎉 WIA Neural Code 생성 완료!', {
+                            scanUrl: `https://wiacode.com/scan/${Date.now()}`,
+                            previewUrl: `https://wiacode.com/preview/${Date.now()}`
+                        });
+                    } else {
+                        throw new Error('백엔드 연결 실패');
+                    }
+
+                } catch (error) {
+                    // API 실패시 로컬 생성
+                    console.log('백엔드 API 연결 실패, 로컬 모드로 전환');
+                    await this.generateLocalCode(qrData);
+                }
+            }
+
+            async generateLocalCode(qrData) {
+                // 미리보기 Canvas를 그대로 다운로드!
+                const previewCanvas = this.canvas;
+                
+                if (!previewCanvas) {
+                    console.error('Canvas가 없습니다');
+                    return;
+                }
+                
+                // Canvas를 이미지로 변환
+                const downloadUrl = previewCanvas.toDataURL('image/png');
+                const link = document.createElement('a');
+                link.download = `WIA_${this.currentDataType}_${Date.now()}.png`;
+                link.href = downloadUrl;
+                
+                this.showSuccess('🎉 WIA Neural Code 생성 완료! 다운로드가 시작됩니다.', {
+                    scanUrl: downloadUrl,
+                    previewUrl: downloadUrl
+                });
+                
+                // 자동 다운로드
+                link.click();
+            }
+
+            async generateBatchCodes() {
+                // 배치 생성 기능은 추후 구현
+                this.showSuccess('🚀 배치 생성 기능은 곧 추가됩니다! 현재는 단일 생성을 지원합니다.', {});
+            }
+
+            showSuccess(message, data) {
+                const successDiv = document.getElementById('successMessage');
+                successDiv.innerHTML = `
+                    <div><strong>${message}</strong></div>
+                    ${data.scanUrl ? `
+                        <div class="mt-2">
+                            <small>
+                                <i class="fas fa-download"></i> 
+                                <a href="${data.scanUrl}" download style="color: white; text-decoration: underline;">
+                                    WIA Neural Code 다운로드
+                                </a>
+                            </small>
+                        </div>
+                    ` : ''}
+                `;
+                successDiv.classList.add('show');
+                
+                setTimeout(() => {
+                    successDiv.classList.remove('show');
+                }, 5000);
+            }
+
+            showError(message) {
+                const errorDiv = document.getElementById('errorMessage');
+                errorDiv.innerHTML = `<strong>❌ 오류:</strong> ${message}`;
+                errorDiv.classList.add('show');
+                
+                setTimeout(() => {
+                    errorDiv.classList.remove('show');
+                }, 5000);
+            }
+        }
+
+        // ============================================================================
+        // 🚀 애플리케이션 시작
+        // ============================================================================
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🧠 WIA Neural Code Generator 로딩...');
+            new WIANeuralCodeGenerator();
+        });
+    </script>
+</body>
+</html>
+
+<!-- 실제 인코딩 라이브러리 추가 -->
+<script src="wia-neural-encoder.js"></script>
+<script src="wia-decoder.js"></script>
+
+<script>
+// 실제 인코더 인스턴스
+const wiaEncoder = new WIANeuralEncoder();
+const wiaDecoder = new WIANeuralDecoder();
+
+// 기존 generateWIACode 함수 교체
+function generateWIACode() {
+    try {
+        // 현재 타입과 데이터 수집
+        const data = collectFormData();
+        
+        // 실제 Neural Pattern 생성
+        const pattern = wiaEncoder.encode(currentType, data);
+        
+        // Canvas에 렌더링
+        renderNeuralPattern(pattern);
+        
+        // 백엔드 저장
+        saveToBackend(pattern);
+        
+        console.log('WIA Code generated:', pattern);
+        alert('✅ WIA Neural Code 생성 완료!');
+        
+    } catch (error) {
+        console.error('Generation error:', error);
+        alert('❌ 생성 실패: ' + error.message);
+    }
+}
+
+function collectFormData() {
+    const data = {};
+    
+    switch(currentType) {
+        case 'wifi':
+            data.ssid = document.getElementById('wifi-ssid').value;
+            data.password = document.getElementById('wifi-password').value;
+            data.security = document.getElementById('wifi-security').value;
+            break;
+            
+        case 'wiapin':
+            // 예시: 서울시청 좌표
+            const lat = 37.5665;
+            const lon = 126.9780;
+            data.pinCode = wiaEncoder.encodeYUJIN(lat, lon);
+            data.latitude = lat;
+            data.longitude = lon;
+            break;
+            
+        case 'human':
+            data.challenge = 'Prove you are human';
+            data.timestamp = Date.now();
+            break;
+            
+        // ... 다른 타입들
+        
+        default:
+            data.content = document.querySelector(`#${currentType}-content`)?.value || '';
+    }
+    
+    return data;
+}
+
+function renderNeuralPattern(pattern) {
+    const canvas = document.getElementById('wiaCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Clear
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, 400, 400);
+    
+    // 1. 뉴런 그리기
+    pattern.neurons.forEach(neuron => {
+        ctx.beginPath();
+        ctx.arc(neuron.x * 0.83, neuron.y * 0.83, 8, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(102, 126, 234, 0.8)`;
+        ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+    });
+    
+    // 2. 연결선 그리기
+    pattern.connections.forEach(conn => {
+        ctx.beginPath();
+        ctx.moveTo(conn.start.x * 0.83, conn.start.y * 0.83);
+        
+        // 곡선 연결
+        const cp1x = (conn.start.x + conn.end.x) / 2 * 0.83;
+        const cp1y = (conn.start.y * 0.83) - 20;
+        ctx.quadraticCurveTo(cp1x, cp1y, conn.end.x * 0.83, conn.end.y * 0.83);
+        
+        ctx.strokeStyle = `rgba(118, 75, 162, ${conn.strength || 0.3})`;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+    });
+    
+    // 3. 마커 그리기 (현재 선택된 모양)
+    drawSelectedMarker(ctx);
+    
+    // 4. 휴먼 패턴 추가 (human 타입일 때)
+    if (currentType === 'human') {
+        const humanPattern = wiaEncoder.generateHumanPattern(pattern);
+        applyHumanEffects(ctx, humanPattern);
+    }
+}
+
+function drawSelectedMarker(ctx) {
+    const markerType = document.querySelector('.marker-selector .active')?.dataset.marker || 'triangle';
+    
+    switch(markerType) {
+        case 'heart':
+            drawHeart(ctx, 200, 50, 30);
+            drawHeart(ctx, 100, 350, 30);
+            drawHeart(ctx, 300, 350, 30);
+            break;
+            
+        case 'star':
+            drawStar(ctx, 200, 50, 30);
+            drawStar(ctx, 100, 350, 30);
+            drawStar(ctx, 300, 350, 30);
+            break;
+            
+        default: // triangle
+            drawTriangleMarkers(ctx);
+    }
+}
+
+function applyHumanEffects(ctx, humanPattern) {
+    // 미세 떨림 효과
+    if (humanPattern.humanOnly?.microVibration) {
+        ctx.filter = 'blur(0.3px)';
+    }
+    
+    // 감정 그라디언트 오버레이
+    const gradient = ctx.createRadialGradient(200, 200, 0, 200, 200, 200);
+    const emotions = humanPattern.humanOnly?.emotionalGradient;
+    if (emotions) {
+        gradient.addColorStop(0, emotions.joy);
+        gradient.addColorStop(0.5, emotions.trust);
+        gradient.addColorStop(1, emotions.anticipation);
+        ctx.globalAlpha = 0.1;
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, 400, 400);
+        ctx.globalAlpha = 1;
+    }
+}
+
+async function saveToBackend(pattern) {
+    try {
+        const response = await fetch('http://localhost:3002/api/wia/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                pattern: pattern,
+                type: currentType,
+                timestamp: Date.now()
+            })
+        });
+        
+        const result = await response.json();
+        console.log('Saved to backend:', result);
+        
+    } catch (error) {
+        console.error('Backend save failed:', error);
+    }
+}
+
+// 테스트 디코딩 함수
+async function testDecode() {
+    const canvas = document.getElementById('wiaCanvas');
+    
+    try {
+        const decoded = await wiaDecoder.decodeFromImage(canvas);
+        console.log('Decoded:', decoded);
+        alert('디코딩 성공: ' + JSON.stringify(decoded));
+        
+    } catch (error) {
+        console.error('Decode error:', error);
+    }
+}
+</script>

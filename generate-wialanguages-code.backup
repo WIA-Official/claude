@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧠 WIA Neural Code Generator - 211 Languages</title>
+    <link rel="icon" type="image/png" href="https://wiacode.com/wia_logo.png">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --wia-primary: #667eea;
+            --wia-secondary: #764ba2;
+            --wia-success: #4caf50;
+            --wia-danger: #f44336;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans KR', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* Glassmorphism Container */
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border-radius: 30px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 900;
+            margin-bottom: 15px;
+            text-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.95;
+        }
+
+        /* Main Grid */
+        .generator-grid {
+            display: grid;
+            grid-template-columns: 1fr 550px;
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        @media (max-width: 1200px) {
+            .generator-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Left Panel - Input Forms */
+        .input-panel {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .section-title {
+            color: var(--wia-primary);
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Data Type Selector */
+        .data-types {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        .type-btn {
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        .type-btn:hover {
+            border-color: var(--wia-primary);
+            transform: translateY(-2px);
+        }
+
+        .type-btn.active {
+            background: linear-gradient(135deg, var(--wia-primary), var(--wia-secondary));
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .type-icon {
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+        }
+
+        /* Dynamic Forms */
+        .form-container {
+            display: none;
+        }
+
+        .form-container.active {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            color: #495057;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--wia-primary);
+        }
+
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        /* Right Panel - Preview */
+        .preview-panel {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            position: sticky;
+            top: 20px;
+        }
+
+        #previewCanvas {
+            width: 100%;
+            height: 480px;
+            border-radius: 15px;
+            background: white;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .preview-info {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            color: #6c757d;
+            font-weight: 600;
+        }
+
+        .info-value {
+            color: var(--wia-primary);
+            font-weight: bold;
+        }
+
+        /* Marker Selector */
+        .marker-selector {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .marker-btn {
+            padding: 10px 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 1.2rem;
+        }
+
+        .marker-btn:hover {
+            border-color: var(--wia-primary);
+        }
+
+        .marker-btn.active {
+            background: var(--wia-primary);
+            color: white;
+            border-color: transparent;
+        }
+
+        /* Generate Button */
+        .generate-section {
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        .btn-generate {
+            padding: 18px 50px;
+            font-size: 1.3rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 50px;
+            background: linear-gradient(135deg, var(--wia-primary), var(--wia-secondary));
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-generate:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.5);
+        }
+
+        .btn-generate:active {
+            transform: translateY(-1px);
+        }
+
+        /* Download Buttons */
+        .download-section {
+            margin-top: 20px;
+            display: none;
+        }
+
+        .download-section.show {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            animation: fadeIn 0.5s;
+        }
+
+        .btn-download {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 12px;
+            background: white;
+            color: var(--wia-primary);
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid var(--wia-primary);
+        }
+
+        .btn-download:hover {
+            background: var(--wia-primary);
+            color: white;
+        }
+
+        /* Language Selector */
+        .language-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .lang-chip {
+            padding: 8px;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            font-size: 0.85rem;
+        }
+
+        .lang-chip:hover {
+            border-color: var(--wia-primary);
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .lang-chip.active {
+            background: var(--wia-primary);
+            color: white;
+            border-color: transparent;
+        }
+
+        /* Batch Mode */
+        .batch-section {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            display: none;
+        }
+
+        .batch-section.show {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+
+        /* Toast Notification */
+        .toast-notification {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            padding: 20px 30px;
+            background: var(--wia-success);
+            color: white;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+            display: none;
+            z-index: 1000;
+        }
+
+        .toast-notification.show {
+            display: block;
+            animation: slideInRight 0.5s;
+        }
+
+        @keyframes slideInRight {
+            from { transform: translateX(400px); }
+            to { transform: translateX(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🧠 WIA Neural Code Generator</h1>
+            <p>차세대 데이터 인코딩 시스템 - 211개 언어 지원, 14가지 데이터 타입</p>
+        </div>
+
+        <!-- Main Grid -->
+        <div class="generator-grid">
+            <!-- Left Panel: Input Forms -->
+            <div class="input-panel">
+                <!-- Data Type Selector -->
+                <div class="section-title">
+                    <i class="fas fa-layer-group"></i>
+                    데이터 타입 선택
+                </div>
+                <div class="data-types">
+                    <div class="type-btn active" data-type="text">
+                        <div class="type-icon">📝</div>
+                        <div>텍스트</div>
+                    </div>
+                    <div class="type-btn" data-type="link">
+                        <div class="type-icon">🔗</div>
+                        <div>링크</div>
+                    </div>
+                    <div class="type-btn" data-type="wifi">
+                        <div class="type-icon">📶</div>
+                        <div>WiFi</div>
+                    </div>
+                    <div class="type-btn" data-type="vcard">
+                        <div class="type-icon">👤</div>
+                        <div>명함</div>
+                    </div>
+                    <div class="type-btn" data-type="email">
+                        <div class="type-icon">📧</div>
+                        <div>이메일</div>
+                    </div>
+                    <div class="type-btn" data-type="phone">
+                        <div class="type-icon">📞</div>
+                        <div>전화</div>
+                    </div>
+                    <div class="type-btn" data-type="sms">
+                        <div class="type-icon">💬</div>
+                        <div>SMS</div>
+                    </div>
+                    <div class="type-btn" data-type="event">
+                        <div class="type-icon">📅</div>
+                        <div>이벤트</div>
+                    </div>
+                    <div class="type-btn" data-type="whatsapp">
+                        <div class="type-icon">💚</div>
+                        <div>WhatsApp</div>
+                    </div>
+                    <div class="type-btn" data-type="crypto">
+                        <div class="type-icon">₿</div>
+                        <div>암호화폐</div>
+                    </div>
+                    <div class="type-btn" data-type="gps">
+                        <div class="type-icon">📍</div>
+                        <div>GPS</div>
+                    </div>
+                    <div class="type-btn" data-type="application">
+                        <div class="type-icon">📱</div>
+                        <div>앱</div>
+                    </div>
+                    <div class="type-btn" data-type="file">
+                        <div class="type-icon">📄</div>
+                        <div>파일</div>
+                    </div>
+                    <div class="type-btn" data-type="staticvcard">
+                        <div class="type-icon">🎴</div>
+                        <div>정적명함</div>
+                    </div>
+                </div>
+
+                <!-- Dynamic Forms -->
+                <div class="section-title">
+                    <i class="fas fa-edit"></i>
+                    데이터 입력
+                </div>
+
+                <!-- Text Form -->
+                <div class="form-container active" data-form="text">
+                    <div class="form-group">
+                        <label>텍스트 내용</label>
+                        <textarea id="text-content" placeholder="여기에 텍스트를 입력하세요... (최대 9KB)"></textarea>
+                    </div>
+                </div>
+
+                <!-- Link Form -->
+                <div class="form-container" data-form="link">
+                    <div class="form-group">
+                        <label>URL 주소</label>
+                        <input type="url" id="link-url" placeholder="https://example.com">
+                    </div>
+                </div>
+
+                <!-- WiFi Form -->
+                <div class="form-container" data-form="wifi">
+                    <div class="form-group">
+                        <label>네트워크 이름 (SSID)</label>
+                        <input type="text" id="wifi-ssid" placeholder="MyWiFi">
+                    </div>
+                    <div class="form-group">
+                        <label>비밀번호</label>
+                        <input type="text" id="wifi-password" placeholder="password123">
+                    </div>
+                    <div class="form-group">
+                        <label>보안 방식</label>
+                        <select id="wifi-security">
+                            <option value="WPA">WPA/WPA2</option>
+                            <option value="WEP">WEP</option>
+                            <option value="nopass">없음</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- vCard Form -->
+                <div class="form-container" data-form="vcard">
+                    <div class="form-group">
+                        <label>이름</label>
+                        <input type="text" id="vcard-name" placeholder="홍길동">
+                    </div>
+                    <div class="form-group">
+                        <label>전화번호</label>
+                        <input type="tel" id="vcard-phone" placeholder="+82-10-1234-5678">
+                    </div>
+                    <div class="form-group">
+                        <label>이메일</label>
+                        <input type="email" id="vcard-email" placeholder="hong@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label>회사</label>
+                        <input type="text" id="vcard-org" placeholder="회사명">
+                    </div>
+                    <div class="form-group">
+                        <label>직책</label>
+                        <input type="text" id="vcard-title" placeholder="대표이사">
+                    </div>
+                </div>
+
+                <!-- Email Form -->
+                <div class="form-container" data-form="email">
+                    <div class="form-group">
+                        <label>받는 사람</label>
+                        <input type="email" id="email-to" placeholder="example@email.com">
+                    </div>
+                    <div class="form-group">
+                        <label>제목</label>
+                        <input type="text" id="email-subject" placeholder="메일 제목">
+                    </div>
+                    <div class="form-group">
+                        <label>내용</label>
+                        <textarea id="email-body" placeholder="메일 내용"></textarea>
+                    </div>
+                </div>
+
+                <!-- Phone Form -->
+                <div class="form-container" data-form="phone">
+                    <div class="form-group">
+                        <label>전화번호</label>
+                        <input type="tel" id="phone-number" placeholder="+82-10-1234-5678">
+                    </div>
+                </div>
+
+                <!-- SMS Form -->
+                <div class="form-container" data-form="sms">
+                    <div class="form-group">
+                        <label>전화번호</label>
+                        <input type="tel" id="sms-phone" placeholder="+82-10-1234-5678">
+                    </div>
+                    <div class="form-group">
+                        <label>메시지</label>
+                        <textarea id="sms-message" placeholder="SMS 메시지 내용"></textarea>
+                    </div>
+                </div>
+
+                <!-- Event Form -->
+                <div class="form-container" data-form="event">
+                    <div class="form-group">
+                        <label>이벤트 제목</label>
+                        <input type="text" id="event-title" placeholder="회의">
+                    </div>
+                    <div class="form-group">
+                        <label>시작 일시</label>
+                        <input type="datetime-local" id="event-start">
+                    </div>
+                    <div class="form-group">
+                        <label>종료 일시</label>
+                        <input type="datetime-local" id="event-end">
+                    </div>
+                    <div class="form-group">
+                        <label>장소</label>
+                        <input type="text" id="event-location" placeholder="회의실 A">
+                    </div>
+                </div>
+
+                <!-- WhatsApp Form -->
+                <div class="form-container" data-form="whatsapp">
+                    <div class="form-group">
+                        <label>전화번호 (국가코드 포함)</label>
+                        <input type="tel" id="whatsapp-phone" placeholder="+821012345678">
+                    </div>
+                    <div class="form-group">
+                        <label>메시지</label>
+                        <textarea id="whatsapp-message" placeholder="WhatsApp 메시지"></textarea>
+                    </div>
+                </div>
+
+                <!-- Crypto Form -->
+                <div class="form-container" data-form="crypto">
+                    <div class="form-group">
+                        <label>암호화폐 종류</label>
+                        <select id="crypto-type">
+                            <option value="bitcoin">Bitcoin (BTC)</option>
+                            <option value="ethereum">Ethereum (ETH)</option>
+                            <option value="ripple">Ripple (XRP)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>지갑 주소</label>
+                        <input type="text" id="crypto-address" placeholder="1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa">
+                    </div>
+                    <div class="form-group">
+                        <label>금액 (선택사항)</label>
+                        <input type="text" id="crypto-amount" placeholder="0.001">
+                    </div>
+                </div>
+
+                <!-- GPS Form -->
+                <div class="form-container" data-form="gps">
+                    <div class="form-group">
+                        <label>위도 (Latitude)</label>
+                        <input type="text" id="gps-lat" placeholder="37.5665">
+                    </div>
+                    <div class="form-group">
+                        <label>경도 (Longitude)</label>
+                        <input type="text" id="gps-lng" placeholder="126.9780">
+                    </div>
+                    <div class="form-group">
+                        <label>장소명 (선택사항)</label>
+                        <input type="text" id="gps-name" placeholder="서울 시청">
+                    </div>
+                </div>
+
+                <!-- Application Form -->
+                <div class="form-container" data-form="application">
+                    <div class="form-group">
+                        <label>앱 스토어</label>
+                        <select id="app-store">
+                            <option value="googleplay">Google Play</option>
+                            <option value="appstore">App Store</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>앱 패키지명 / ID</label>
+                        <input type="text" id="app-id" placeholder="com.example.app">
+                    </div>
+                </div>
+
+                <!-- File Form -->
+                <div class="form-container" data-form="file">
+                    <div class="form-group">
+                        <label>파일 URL</label>
+                        <input type="url" id="file-url" placeholder="https://example.com/file.pdf">
+                    </div>
+                    <div class="form-group">
+                        <label>파일명</label>
+                        <input type="text" id="file-name" placeholder="document.pdf">
+                    </div>
+                </div>
+
+                <!-- Static vCard Form -->
+                <div class="form-container" data-form="staticvcard">
+                    <div class="form-group">
+                        <label>vCard 데이터</label>
+                        <textarea id="staticvcard-data" placeholder="BEGIN:VCARD&#10;VERSION:3.0&#10;FN:홍길동&#10;END:VCARD"></textarea>
+                    </div>
+                </div>
+
+                <!-- Generate Button -->
+                <div class="generate-section">
+                    <button class="btn-generate" onclick="generateCode()">
+                        <i class="fas fa-magic"></i> WIA Neural Code 생성하기
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right Panel: Preview -->
+            <div class="preview-panel">
+                <div class="section-title">
+                    <i class="fas fa-eye"></i>
+                    실시간 미리보기
+                </div>
+
+                <canvas id="previewCanvas"></canvas>
+
+                <!-- Preview Info -->
+                <div class="preview-info">
+                    <div class="info-row">
+                        <span class="info-label">데이터 크기</span>
+                        <span class="info-value" id="info-size">0 bytes</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">인코딩 크기</span>
+                        <span class="info-value" id="info-encoded">0 bytes</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">뉴런 개수</span>
+                        <span class="info-value" id="info-neurons">144개</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">오류 정정</span>
+                        <span class="info-value">30%</span>
+                    </div>
+                </div>
+
+                <!-- Marker Selector -->
+                <div class="section-title mt-4">
+                    <i class="fas fa-shapes"></i>
+                    마커 스타일
+                </div>
+                <div class="marker-selector">
+                    <button class="marker-btn active" data-marker="triangle" title="삼각형">▲</button>
+                    <button class="marker-btn" data-marker="heart" title="하트">♥</button>
+                    <button class="marker-btn" data-marker="star" title="별">★</button>
+                    <button class="marker-btn" data-marker="diamond" title="다이아몬드">◆</button>
+                    <button class="marker-btn" data-marker="moon" title="달">🌙</button>
+                    <button class="marker-btn" data-marker="lightning" title="번개">⚡</button>
+                </div>
+
+                <!-- Download Section -->
+                <div class="download-section" id="downloadSection">
+                    <button class="btn-download" onclick="downloadPNG()">
+                        <i class="fas fa-download"></i> PNG
+                    </button>
+                    <button class="btn-download" onclick="downloadJPG()">
+                        <i class="fas fa-download"></i> JPG
+                    </button>
+                    <button class="btn-download" onclick="downloadSVG()">
+                        <i class="fas fa-download"></i> SVG
+                    </button>
+                    <button class="btn-download" onclick="downloadPDF()">
+                        <i class="fas fa-download"></i> PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast-notification" id="toast">
+        <i class="fas fa-check-circle"></i>
+        <span id="toast-message">생성 완료!</span>
+    </div>
+
+    <!-- Scripts -->
+    <script src="assets/js/wia-neural-encoder.js"></script>
+    <script src="assets/js/wia-neural-decoder.js"></script>
+    <script src="assets/js/wia-engine.js"></script>
+
+    <script>
+        // Global Variables
+        let currentType = 'text';
+        let currentMarker = 'triangle';
+        let encoder = new WIANeuralEncoder();
+        let canvas = document.getElementById('previewCanvas');
+        let engine = new WIANeuralEngine(canvas);
+        let currentPattern = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            setupTypeButtons();
+            setupMarkerButtons();
+            updatePreview();
+        });
+
+        // Setup Data Type Buttons
+        function setupTypeButtons() {
+            document.querySelectorAll('.type-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    // Update active state
+                    document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+
+                    // Update current type
+                    currentType = this.dataset.type;
+
+                    // Show corresponding form
+                    document.querySelectorAll('.form-container').forEach(f => f.classList.remove('active'));
+                    document.querySelector(`[data-form="${currentType}"]`).classList.add('active');
+
+                    // Update preview
+                    updatePreview();
+                });
+            });
+        }
+
+        // Setup Marker Buttons
+        function setupMarkerButtons() {
+            document.querySelectorAll('.marker-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.marker-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    currentMarker = this.dataset.marker;
+                    updatePreview();
+                });
+            });
+        }
+
+        // Collect Form Data
+        function collectFormData() {
+            let data = {};
+
+            switch(currentType) {
+                case 'text':
+                    data = { content: document.getElementById('text-content').value || '안녕하세요! WIA Neural Code입니다.' };
+                    break;
+
+                case 'link':
+                    data = { url: document.getElementById('link-url').value || 'https://wiacode.com' };
+                    break;
+
+                case 'wifi':
+                    data = {
+                        ssid: document.getElementById('wifi-ssid').value || 'MyWiFi',
+                        password: document.getElementById('wifi-password').value || 'password123',
+                        security: document.getElementById('wifi-security').value
+                    };
+                    break;
+
+                case 'vcard':
+                    data = {
+                        name: document.getElementById('vcard-name').value || '홍길동',
+                        phone: document.getElementById('vcard-phone').value || '+82-10-1234-5678',
+                        email: document.getElementById('vcard-email').value || 'hong@example.com',
+                        org: document.getElementById('vcard-org').value || 'WIA Corp',
+                        title: document.getElementById('vcard-title').value || 'CEO'
+                    };
+                    break;
+
+                case 'email':
+                    data = {
+                        to: document.getElementById('email-to').value || 'example@email.com',
+                        subject: document.getElementById('email-subject').value || 'Hello',
+                        body: document.getElementById('email-body').value || 'Message body'
+                    };
+                    break;
+
+                case 'phone':
+                    data = { phone: document.getElementById('phone-number').value || '+82-10-1234-5678' };
+                    break;
+
+                case 'sms':
+                    data = {
+                        phone: document.getElementById('sms-phone').value || '+82-10-1234-5678',
+                        message: document.getElementById('sms-message').value || 'Hello!'
+                    };
+                    break;
+
+                case 'event':
+                    data = {
+                        title: document.getElementById('event-title').value || '회의',
+                        start: document.getElementById('event-start').value || new Date().toISOString(),
+                        end: document.getElementById('event-end').value || new Date(Date.now() + 3600000).toISOString(),
+                        location: document.getElementById('event-location').value || '회의실 A'
+                    };
+                    break;
+
+                case 'whatsapp':
+                    data = {
+                        phone: document.getElementById('whatsapp-phone').value || '+821012345678',
+                        message: document.getElementById('whatsapp-message').value || 'Hello WhatsApp!'
+                    };
+                    break;
+
+                case 'crypto':
+                    data = {
+                        type: document.getElementById('crypto-type').value,
+                        address: document.getElementById('crypto-address').value || '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa',
+                        amount: document.getElementById('crypto-amount').value
+                    };
+                    break;
+
+                case 'gps':
+                    data = {
+                        lat: document.getElementById('gps-lat').value || '37.5665',
+                        lng: document.getElementById('gps-lng').value || '126.9780',
+                        name: document.getElementById('gps-name').value || '서울 시청'
+                    };
+                    break;
+
+                case 'application':
+                    data = {
+                        store: document.getElementById('app-store').value,
+                        id: document.getElementById('app-id').value || 'com.example.app'
+                    };
+                    break;
+
+                case 'file':
+                    data = {
+                        url: document.getElementById('file-url').value || 'https://example.com/file.pdf',
+                        name: document.getElementById('file-name').value || 'document.pdf'
+                    };
+                    break;
+
+                case 'staticvcard':
+                    data = {
+                        vcard: document.getElementById('staticvcard-data').value || 'BEGIN:VCARD\nVERSION:3.0\nFN:홍길동\nEND:VCARD'
+                    };
+                    break;
+            }
+
+            return data;
+        }
+
+        // Update Preview
+        function updatePreview() {
+            try {
+                const data = collectFormData();
+                currentPattern = encoder.encode(currentType, data);
+
+                // Render with WIANeuralEngine
+                engine.markerType = currentMarker;
+                engine.pattern = currentPattern;
+                engine.render();
+
+                // Update info
+                document.getElementById('info-size').textContent = (currentPattern.metadata.dataSize || 0) + ' bytes';
+                document.getElementById('info-encoded').textContent = (currentPattern.metadata.encodedSize || 0) + ' bytes';
+                document.getElementById('info-neurons').textContent = (currentPattern.metadata.neuronCount || 144) + '개';
+
+            } catch (error) {
+                console.error('미리보기 업데이트 오류:', error);
+            }
+        }
+
+        // Generate Code
+        function generateCode() {
+            try {
+                updatePreview();
+
+                // Show download section
+                document.getElementById('downloadSection').classList.add('show');
+
+                // Show toast
+                showToast('🎉 WIA Neural Code 생성 완료!');
+
+            } catch (error) {
+                console.error('생성 오류:', error);
+                showToast('❌ 생성 실패: ' + error.message);
+            }
+        }
+
+        // Download Functions
+        function downloadPNG() {
+            const link = document.createElement('a');
+            link.download = `wia-neural-code-${Date.now()}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            showToast('✅ PNG 다운로드 완료!');
+        }
+
+        function downloadJPG() {
+            const link = document.createElement('a');
+            link.download = `wia-neural-code-${Date.now()}.jpg`;
+            link.href = canvas.toDataURL('image/jpeg', 0.95);
+            link.click();
+            showToast('✅ JPG 다운로드 완료!');
+        }
+
+        function downloadSVG() {
+            // SVG export (simplified)
+            showToast('⚠️ SVG 내보내기는 곧 지원됩니다!');
+        }
+
+        function downloadPDF() {
+            // PDF export (simplified)
+            showToast('⚠️ PDF 내보내기는 곧 지원됩니다!');
+        }
+
+        // Show Toast
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toast-message');
+            toastMessage.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // Auto-update preview on input
+        document.addEventListener('input', function(e) {
+            if (e.target.matches('input, textarea, select')) {
+                updatePreview();
+            }
+        });
+    </script>
+</body>
+</html>

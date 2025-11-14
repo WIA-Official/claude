@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WIA Neural Code - Next Generation Data Recognition System</title>
+    <link rel="icon" type="image/png" href="https://wiacode.com/wia_logo.png">
+    <link rel="shortcut icon" type="image/png" href="https://wiacode.com/wia_logo.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans KR', sans-serif;
+            background: #0a0a0a;
+            color: white;
+            overflow-x: hidden;
+        }
+
+        /* Language Switcher */
+        .lang-switcher {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            z-index: 1000;
+            display: flex;
+            gap: 0;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 50px;
+            padding: 6px;
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .lang-btn {
+            padding: 10px 20px;
+            border: none;
+            background: transparent;
+            color: #a0a0a0;
+            cursor: pointer;
+            border-radius: 50px;
+            font-size: 14px;
+            font-weight: 700;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .lang-btn:hover {
+            color: #fff;
+        }
+
+        .lang-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        /* Animated Neural Background */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            background: radial-gradient(circle at 50% 50%, #1a1a2e 0%, #0a0a0a 100%);
+            overflow: hidden;
+        }
+
+        /* Particle Canvas */
+        #particles-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.6;
+        }
+
+        /* Animated Gradient Overlay */
+        .gradient-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(circle at 20% 50%, rgba(102, 126, 234, 0.2) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(118, 75, 162, 0.2) 0%, transparent 50%),
+                radial-gradient(circle at 40% 20%, rgba(0, 180, 216, 0.15) 0%, transparent 50%);
+            animation: gradientShift 15s ease infinite;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(1.1) rotate(5deg); }
+        }
+
+        /* Hero Content */
+        .hero-content {
+            text-align: center;
+            z-index: 10;
+            padding: 40px 20px;
+            max-width: 900px;
+            position: relative;
+        }
+
+        /* 3D Logo Animation */
+        .logo-container {
+            perspective: 1000px;
+            margin: 0 auto 50px;
+            width: 250px;
+            height: 250px;
+        }
+
+        .logo-animation {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            animation: logoRotate 20s linear infinite;
+        }
+
+        @keyframes logoRotate {
+            0% { transform: rotateY(0deg) rotateX(0deg); }
+            100% { transform: rotateY(360deg) rotateX(360deg); }
+        }
+
+        .triangle {
+            position: absolute;
+            width: 0;
+            height: 0;
+            filter: drop-shadow(0 0 20px currentColor);
+            animation: trianglePulse 3s ease-in-out infinite;
+        }
+
+        .triangle-top {
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-left: 50px solid transparent;
+            border-right: 50px solid transparent;
+            border-top: 80px solid #ff006e;
+            animation-delay: 0s;
+            color: #ff006e;
+        }
+
+        .triangle-left {
+            bottom: 30px;
+            left: 30px;
+            border-left: 50px solid transparent;
+            border-right: 50px solid transparent;
+            border-bottom: 80px solid #00b4d8;
+            animation-delay: 0.7s;
+            color: #00b4d8;
+        }
+
+        .triangle-right {
+            bottom: 30px;
+            right: 30px;
+            border-left: 50px solid transparent;
+            border-right: 50px solid transparent;
+            border-bottom: 80px solid #7209b7;
+            animation-delay: 1.4s;
+            color: #7209b7;
+        }
+
+        @keyframes trianglePulse {
+            0%, 100% {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: translateY(-15px) scale(1.08);
+                opacity: 0.9;
+            }
+        }
+
+        /* Glowing Title */
+        h1 {
+            font-size: 64px;
+            font-weight: 900;
+            margin-bottom: 25px;
+            background: linear-gradient(135deg, #ffffff 0%, #667eea 50%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-size: 200% 200%;
+            animation: titleGlow 5s ease infinite;
+            text-shadow: 0 0 40px rgba(102, 126, 234, 0.5);
+            letter-spacing: -1px;
+        }
+
+        @keyframes titleGlow {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .subtitle {
+            font-size: 24px;
+            margin-bottom: 20px;
+            opacity: 0.95;
+            font-weight: 300;
+            letter-spacing: 0.5px;
+            animation: fadeInUp 1s ease;
+        }
+
+        .tagline {
+            font-size: 16px;
+            color: #667eea;
+            margin-bottom: 50px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            animation: fadeInUp 1.2s ease;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Features with Icons */
+        .features {
+            display: flex;
+            gap: 40px;
+            justify-content: center;
+            margin-bottom: 50px;
+            flex-wrap: wrap;
+            animation: fadeInUp 1.4s ease;
+        }
+
+        .feature {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s;
+            min-width: 140px;
+        }
+
+        .feature:hover {
+            transform: translateY(-5px);
+            background: rgba(102, 126, 234, 0.1);
+            border-color: rgba(102, 126, 234, 0.5);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+
+        .feature-icon {
+            font-size: 36px;
+            animation: iconFloat 3s ease-in-out infinite;
+        }
+
+        @keyframes iconFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        .feature-text {
+            font-size: 14px;
+            font-weight: 600;
+            text-align: center;
+            line-height: 1.4;
+        }
+
+        /* CTA Buttons */
+        .cta-buttons {
+            display: flex;
+            gap: 25px;
+            justify-content: center;
+            flex-wrap: wrap;
+            animation: fadeInUp 1.6s ease;
+        }
+
+        .btn {
+            padding: 20px 45px;
+            border: none;
+            border-radius: 50px;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn span {
+            position: relative;
+            z-index: 1;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.6);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+            border: 2px solid rgba(102, 126, 234, 0.5);
+            backdrop-filter: blur(10px);
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-3px) scale(1.05);
+            background: rgba(102, 126, 234, 0.2);
+            border-color: #667eea;
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.4);
+        }
+
+        /* Stats Section */
+        .stats-section {
+            padding: 80px 20px;
+            background: linear-gradient(180deg, #0a0a0a 0%, #1a1a2e 50%, #0a0a0a 100%);
+            position: relative;
+        }
+
+        .stats-grid {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 40px;
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 40px 30px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 20px;
+            border: 1px solid rgba(102, 126, 234, 0.2);
+            transition: all 0.3s;
+            backdrop-filter: blur(10px);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-10px);
+            background: rgba(102, 126, 234, 0.05);
+            border-color: #667eea;
+            box-shadow: 0 20px 50px rgba(102, 126, 234, 0.3);
+        }
+
+        .stat-number {
+            font-size: 56px;
+            font-weight: 900;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 15px;
+            animation: countUp 2s ease-out;
+        }
+
+        @keyframes countUp {
+            from { opacity: 0; transform: scale(0.5); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .stat-label {
+            font-size: 18px;
+            color: #a0a0a0;
+            font-weight: 500;
+        }
+
+        /* Info Cards */
+        .info-section {
+            padding: 100px 20px;
+            background: #0a0a0a;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 48px;
+            font-weight: 900;
+            margin-bottom: 60px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .info-grid {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 40px;
+        }
+
+        .info-card {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            border-radius: 25px;
+            padding: 40px;
+            border: 1px solid rgba(102, 126, 234, 0.2);
+            transition: all 0.4s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .info-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(102, 126, 234, 0.1) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.4s;
+        }
+
+        .info-card:hover::before {
+            opacity: 1;
+            animation: cardGlow 2s ease-in-out infinite;
+        }
+
+        @keyframes cardGlow {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(10%, 10%); }
+        }
+
+        .info-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            border-color: #667eea;
+            box-shadow: 0 25px 60px rgba(102, 126, 234, 0.4);
+        }
+
+        .info-card-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+            display: inline-block;
+            animation: iconBounce 2s ease-in-out infinite;
+        }
+
+        @keyframes iconBounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .info-card h3 {
+            font-size: 28px;
+            margin-bottom: 20px;
+            color: #667eea;
+            font-weight: 800;
+        }
+
+        .info-card p {
+            color: #c0c0c0;
+            line-height: 1.8;
+            font-size: 16px;
+        }
+
+        /* Tech Specs */
+        .specs {
+            padding: 100px 20px;
+            background: linear-gradient(180deg, #0a0a0a 0%, #1a1a2e 50%, #0a0a0a 100%);
+            position: relative;
+        }
+
+        .specs-container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .spec-list {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 25px;
+            padding: 50px;
+            border: 1px solid rgba(102, 126, 234, 0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        .spec-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 25px 0;
+            border-bottom: 1px solid rgba(102, 126, 234, 0.1);
+            transition: all 0.3s;
+        }
+
+        .spec-item:hover {
+            padding-left: 20px;
+            background: rgba(102, 126, 234, 0.05);
+            border-radius: 10px;
+        }
+
+        .spec-item:last-child {
+            border-bottom: none;
+        }
+
+        .spec-label {
+            color: #a0a0a0;
+            font-size: 18px;
+            font-weight: 500;
+        }
+
+        .spec-value {
+            color: #fff;
+            font-weight: 700;
+            font-size: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Footer */
+        .footer {
+            padding: 60px 20px 40px;
+            background: #000;
+            text-align: center;
+            border-top: 1px solid rgba(102, 126, 234, 0.2);
+            position: relative;
+        }
+
+        .footer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent 0%, #667eea 50%, transparent 100%);
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 40px;
+            justify-content: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .footer-links a {
+            color: #808080;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 16px;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .footer-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s;
+        }
+
+        .footer-links a:hover {
+            color: #667eea;
+        }
+
+        .footer-links a:hover::after {
+            width: 100%;
+        }
+
+        .footer-copyright {
+            color: #606060;
+            margin-top: 30px;
+            font-size: 15px;
+        }
+
+        .footer-copyright .year {
+            color: #667eea;
+            font-weight: 700;
+        }
+
+        /* Scroll Indicator */
+        .scroll-indicator {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            animation: scrollBounce 2s ease-in-out infinite;
+            z-index: 10;
+            cursor: pointer;
+        }
+
+        .scroll-indicator::before {
+            content: '↓';
+            font-size: 32px;
+            color: #667eea;
+            opacity: 0.7;
+        }
+
+        @keyframes scrollBounce {
+            0%, 100% { transform: translateX(-50%) translateY(0); }
+            50% { transform: translateX(-50%) translateY(10px); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .lang-switcher {
+                top: 15px;
+                right: 15px;
+                padding: 4px;
+            }
+
+            .lang-btn {
+                padding: 8px 16px;
+                font-size: 12px;
+            }
+
+            h1 { font-size: 42px; }
+            .subtitle { font-size: 20px; }
+            .tagline { font-size: 13px; }
+            .btn { padding: 16px 32px; font-size: 16px; }
+            .logo-container { width: 180px; height: 180px; }
+            .section-title { font-size: 36px; }
+            .info-grid { grid-template-columns: 1fr; }
+            .spec-list { padding: 30px 20px; }
+            .spec-item { flex-direction: column; gap: 10px; text-align: center; }
+        }
+
+        /* Loading Animation */
+        @keyframes shimmer {
+            0% { background-position: -1000px 0; }
+            100% { background-position: 1000px 0; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Language Switcher -->
+    <div class="lang-switcher">
+        <button class="lang-btn" data-lang="en">ENG</button>
+        <button class="lang-btn" data-lang="ko">KOR</button>
+    </div>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <canvas id="particles-canvas"></canvas>
+        <div class="gradient-overlay"></div>
+
+        <div class="hero-content">
+            <div class="logo-container">
+                <div class="logo-animation">
+                    <div class="triangle triangle-top"></div>
+                    <div class="triangle triangle-left"></div>
+                    <div class="triangle triangle-right"></div>
+                </div>
+            </div>
+
+            <h1>WIA Neural Code</h1>
+            <p class="subtitle" data-en="Next Generation 9KB Data Recognition System" data-ko="차세대 9KB 데이터 인식 시스템">Next Generation 9KB Data Recognition System</p>
+            <p class="tagline" data-en="Advanced Neural Pattern Technology" data-ko="첨단 뉴럴 패턴 기술">Advanced Neural Pattern Technology</p>
+
+            <div class="features">
+                <div class="feature">
+                    <span class="feature-icon">💾</span>
+                    <span class="feature-text" data-en="Exactly<br>9KB" data-ko="정확히<br>9KB 용량">Exactly<br>9KB</span>
+                </div>
+                <div class="feature">
+                    <span class="feature-icon">🔺</span>
+                    <span class="feature-text" data-en="Triangle<br>Pattern" data-ko="삼각형<br>패턴 인식">Triangle<br>Pattern</span>
+                </div>
+                <div class="feature">
+                    <span class="feature-icon">🌍</span>
+                    <span class="feature-text" data-en="211<br>Languages" data-ko="211개<br>언어 지원">211<br>Languages</span>
+                </div>
+                <div class="feature">
+                    <span class="feature-icon">⚡</span>
+                    <span class="feature-text" data-en="0.1s<br>Fast Scan" data-ko="0.1초<br>초고속 인식">0.1s<br>Fast Scan</span>
+                </div>
+            </div>
+
+            <div class="cta-buttons">
+                <a href="generate-wialanguages-code.html" class="btn btn-primary" target="_blank">
+                    <span>🎨</span>
+                    <span class="btn-text" data-en="Generate Code" data-ko="WIA Code 생성">Generate Code</span>
+                </a>
+                <a href="mobile-scanner.html" class="btn btn-secondary" target="_blank">
+                    <span>📱</span>
+                    <span class="btn-text" data-en="Run Scanner" data-ko="스캐너 실행">Run Scanner</span>
+                </a>
+            </div>
+        </div>
+
+        <div class="scroll-indicator"></div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="stats-section">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number">9KB</div>
+                <div class="stat-label" data-en="Data Capacity" data-ko="데이터 용량">Data Capacity</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">99.9%</div>
+                <div class="stat-label" data-en="Accuracy" data-ko="정확도">Accuracy</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">211</div>
+                <div class="stat-label" data-en="Languages" data-ko="지원 언어">Languages</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">0.1s</div>
+                <div class="stat-label" data-en="Scan Speed" data-ko="인식 속도">Scan Speed</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Info Section -->
+    <section class="info-section">
+        <h2 class="section-title" data-en="Core Technology" data-ko="핵심 기술">Core Technology</h2>
+        <div class="info-grid">
+            <div class="info-card">
+                <div class="info-card-icon">🚀</div>
+                <h3 data-en="Ultra-Fast Recognition" data-ko="초고속 인식">Ultra-Fast Recognition</h3>
+                <p data-en="Recognizes patterns and restores data within 0.1 seconds using the latest Neural Network technology. Features innovative algorithms capable of real-time processing." data-ko="최신 Neural Network 기술로 0.1초 이내에 패턴을 인식하고 데이터를 복원합니다. 실시간 처리가 가능한 혁신적인 알고리즘을 탑재했습니다.">Recognizes patterns and restores data within 0.1 seconds using the latest Neural Network technology. Features innovative algorithms capable of real-time processing.</p>
+            </div>
+            <div class="info-card">
+                <div class="info-card-icon">🔒</div>
+                <h3 data-en="Data Integrity" data-ko="데이터 무결성">Data Integrity</h3>
+                <p data-en="Guarantees 99.9% accuracy with SHA-256 checksum and proprietary Reed-Solomon error correction algorithm. Provides 30% error recovery capability." data-ko="SHA-256 체크섬과 독자적인 Reed-Solomon 오류 정정 알고리즘으로 99.9% 정확도를 보장합니다. 30% 에러 복구 능력을 제공합니다.">Guarantees 99.9% accuracy with SHA-256 checksum and proprietary Reed-Solomon error correction algorithm. Provides 30% error recovery capability.</p>
+            </div>
+            <div class="info-card">
+                <div class="info-card-icon">🎯</div>
+                <h3 data-en="Innovative Design" data-ko="독창적 디자인">Innovative Design</h3>
+                <p data-en="Triangle 3-point marker system enables accurate scanning from any angle. Visualizes data with 144 neurons and connection networks." data-ko="삼각형 3점 마커 시스템으로 어떤 각도에서도 정확한 스캔이 가능합니다. 144개 뉴런과 연결망으로 데이터를 시각화합니다.">Triangle 3-point marker system enables accurate scanning from any angle. Visualizes data with 144 neurons and connection networks.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Tech Specs -->
+    <section class="specs">
+        <div class="specs-container">
+            <h2 class="section-title" data-en="Technical Specifications" data-ko="기술 사양">Technical Specifications</h2>
+            <div class="spec-list">
+                <div class="spec-item">
+                    <span class="spec-label" data-en="Data Capacity" data-ko="데이터 용량">Data Capacity</span>
+                    <span class="spec-value">9KB (9,216 bytes)</span>
+                </div>
+                <div class="spec-item">
+                    <span class="spec-label" data-en="Recognition Speed" data-ko="인식 속도">Recognition Speed</span>
+                    <span class="spec-value">&lt; 100ms</span>
+                </div>
+                <div class="spec-item">
+                    <span class="spec-label" data-en="Accuracy" data-ko="정확도">Accuracy</span>
+                    <span class="spec-value">99.9%</span>
+                </div>
+                <div class="spec-item">
+                    <span class="spec-label" data-en="Error Correction" data-ko="에러 정정">Error Correction</span>
+                    <span class="spec-value">Reed-Solomon 30%</span>
+                </div>
+                <div class="spec-item">
+                    <span class="spec-label" data-en="Marker System" data-ko="마커 시스템">Marker System</span>
+                    <span class="spec-value" data-en="Triangle 3-Point (▼ ▲▲)" data-ko="삼각형 3점 (▼ ▲▲)">Triangle 3-Point (▼ ▲▲)</span>
+                </div>
+                <div class="spec-item">
+                    <span class="spec-label" data-en="Neuron Count" data-ko="뉴런 수">Neuron Count</span>
+                    <span class="spec-value" data-en="144 (12×12 Grid)" data-ko="144개 (12×12 그리드)">144 (12×12 Grid)</span>
+                </div>
+                <div class="spec-item">
+                    <span class="spec-label" data-en="Supported Types" data-ko="지원 데이터 타입">Supported Types</span>
+                    <span class="spec-value">14 (Text, Link, WiFi, vCard, GPS...)</span>
+                </div>
+                <div class="spec-item">
+                    <span class="spec-label" data-en="Supported Formats" data-ko="지원 형식">Supported Formats</span>
+                    <span class="spec-value">PNG, JPG, JPEG</span>
+                </div>
+                <div class="spec-item">
+                    <span class="spec-label" data-en="API Version" data-ko="API 버전">API Version</span>
+                    <span class="spec-value">REST API v1.0</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-links">
+            <a href="generate-wialanguages-code.html">Generator</a>
+            <a href="mobile-scanner.html">Scanner</a>
+            <a href="wia-neural-reader.html">Reader</a>
+            <a href="wia-neural-generator-realtime.html">Real-time Preview</a>
+            <a href="test-wia-system.html">Test System</a>
+            <a href="wia-stealth-navigator-ultimate.html">Navigator</a>
+        </div>
+        <p class="footer-copyright">
+            © <span class="year"></span> WIA Neural Code · Powered by WIA Family
+        </p>
+    </footer>
+
+    <!-- Neural Network Particle Animation -->
+    <script>
+        // Language System
+        const translations = {
+            en: {
+                subtitle: 'Next Generation 9KB Data Recognition System',
+                tagline: 'Advanced Neural Pattern Technology',
+                feature1: 'Exactly<br>9KB',
+                feature2: 'Triangle<br>Pattern',
+                feature3: '211<br>Languages',
+                feature4: '0.1s<br>Fast Scan',
+                btn1: 'Generate Code',
+                btn2: 'Run Scanner',
+                stat1: 'Data Capacity',
+                stat2: 'Accuracy',
+                stat3: 'Languages',
+                stat4: 'Scan Speed',
+                sectionTitle1: 'Core Technology',
+                sectionTitle2: 'Technical Specifications',
+                infoTitle1: 'Ultra-Fast Recognition',
+                infoTitle2: 'Data Integrity',
+                infoTitle3: 'Innovative Design',
+                infoDesc1: 'Recognizes patterns and restores data within 0.1 seconds using the latest Neural Network technology. Features innovative algorithms capable of real-time processing.',
+                infoDesc2: 'Guarantees 99.9% accuracy with SHA-256 checksum and proprietary Reed-Solomon error correction algorithm. Provides 30% error recovery capability.',
+                infoDesc3: 'Triangle 3-point marker system enables accurate scanning from any angle. Visualizes data with 144 neurons and connection networks.',
+                spec1: 'Data Capacity',
+                spec2: 'Recognition Speed',
+                spec3: 'Accuracy',
+                spec4: 'Error Correction',
+                spec5: 'Marker System',
+                spec6: 'Neuron Count',
+                spec7: 'Supported Types',
+                spec8: 'Supported Formats',
+                spec9: 'API Version'
+            },
+            ko: {
+                subtitle: '차세대 9KB 데이터 인식 시스템',
+                tagline: '첨단 뉴럴 패턴 기술',
+                feature1: '정확히<br>9KB 용량',
+                feature2: '삼각형<br>패턴 인식',
+                feature3: '211개<br>언어 지원',
+                feature4: '0.1초<br>초고속 인식',
+                btn1: 'WIA Code 생성',
+                btn2: '스캐너 실행',
+                stat1: '데이터 용량',
+                stat2: '정확도',
+                stat3: '지원 언어',
+                stat4: '인식 속도',
+                sectionTitle1: '핵심 기술',
+                sectionTitle2: '기술 사양',
+                infoTitle1: '초고속 인식',
+                infoTitle2: '데이터 무결성',
+                infoTitle3: '독창적 디자인',
+                infoDesc1: '최신 Neural Network 기술로 0.1초 이내에 패턴을 인식하고 데이터를 복원합니다. 실시간 처리가 가능한 혁신적인 알고리즘을 탑재했습니다.',
+                infoDesc2: 'SHA-256 체크섬과 독자적인 Reed-Solomon 오류 정정 알고리즘으로 99.9% 정확도를 보장합니다. 30% 에러 복구 능력을 제공합니다.',
+                infoDesc3: '삼각형 3점 마커 시스템으로 어떤 각도에서도 정확한 스캔이 가능합니다. 144개 뉴런과 연결망으로 데이터를 시각화합니다.',
+                spec1: '데이터 용량',
+                spec2: '인식 속도',
+                spec3: '정확도',
+                spec4: '에러 정정',
+                spec5: '마커 시스템',
+                spec6: '뉴런 수',
+                spec7: '지원 데이터 타입',
+                spec8: '지원 형식',
+                spec9: 'API 버전'
+            }
+        };
+
+        // Initialize language
+        let currentLang = localStorage.getItem('wia-lang') || 'en';
+
+        function switchLanguage(lang) {
+            currentLang = lang;
+            localStorage.setItem('wia-lang', lang);
+
+            // Update all elements with data-en and data-ko attributes
+            document.querySelectorAll('[data-en][data-ko]').forEach(element => {
+                const text = element.getAttribute(`data-${lang}`);
+                if (text) {
+                    element.innerHTML = text;
+                }
+            });
+
+            // Update active button
+            document.querySelectorAll('.lang-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.getAttribute('data-lang') === lang) {
+                    btn.classList.add('active');
+                }
+            });
+
+            // Update html lang attribute
+            document.documentElement.lang = lang;
+        }
+
+        // Language button click handlers
+        document.querySelectorAll('.lang-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                switchLanguage(btn.getAttribute('data-lang'));
+            });
+        });
+
+        // Initialize with saved or default language
+        switchLanguage(currentLang);
+
+        // Dynamic Year
+        document.querySelector('.footer .year').textContent = new Date().getFullYear();
+
+        // Particle Canvas Animation
+        const canvas = document.getElementById('particles-canvas');
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const particles = [];
+        const particleCount = 80;
+        const connectionDistance = 150;
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.vx = (Math.random() - 0.5) * 0.5;
+                this.vy = (Math.random() - 0.5) * 0.5;
+                this.radius = Math.random() * 2 + 1;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+
+                if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
+                if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(102, 126, 234, 0.8)';
+                ctx.fill();
+            }
+        }
+
+        // Initialize particles
+        for (let i = 0; i < particleCount; i++) {
+            particles.push(new Particle());
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Update and draw particles
+            particles.forEach(particle => {
+                particle.update();
+                particle.draw();
+            });
+
+            // Draw connections
+            for (let i = 0; i < particles.length; i++) {
+                for (let j = i + 1; j < particles.length; j++) {
+                    const dx = particles[i].x - particles[j].x;
+                    const dy = particles[i].y - particles[j].y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance < connectionDistance) {
+                        ctx.beginPath();
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.strokeStyle = `rgba(102, 126, 234, ${1 - distance / connectionDistance})`;
+                        ctx.lineWidth = 0.5;
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+
+        // Resize handler
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+
+        // Scroll indicator click
+        document.querySelector('.scroll-indicator').addEventListener('click', () => {
+            window.scrollTo({
+                top: window.innerHeight,
+                behavior: 'smooth'
+            });
+        });
+    </script>
+</body>
+</html>
