@@ -1,8 +1,7 @@
-// WIA Neural Code Reader Service Worker
-// 버전: 1.0.0
+// WIA Neural Code Reader Service Worker v1.1.0
 // 100년 후에도 존재할 수 있는 코드
 
-const CACHE_NAME = 'wia-neural-v1.0.0';
+const CACHE_NAME = 'wia-neural-v1.1.0';
 const urlsToCache = [
   '/',
   '/wia-reader.html',
@@ -14,6 +13,10 @@ const urlsToCache = [
   '/assets/js/wia-emergency.js',
   '/assets/js/wia-privacy.js',
   '/assets/js/wia-neural-decoder.js',
+  '/assets/js/wia-data-types.js',
+  '/assets/js/wia-engine-BEAUTIFUL-QR.js',
+  '/assets/js/wia-engine-100KB.js',
+  '/assets/js/wia-neural-decoder-100KB.js',
   '/icons/icon-72x72.png',
   '/icons/icon-96x96.png',
   '/icons/icon-128x128.png',
@@ -24,7 +27,7 @@ const urlsToCache = [
   '/icons/icon-512x512.png'
 ];
 
-// Install 이벤트 - 캐시 생성
+// Install 이벤트
 self.addEventListener('install', event => {
   console.log('[ServiceWorker] Install');
   
@@ -32,23 +35,23 @@ self.addEventListener('install', event => {
     caches.open(CACHE_NAME)
       .then(cache => {
         console.log('[ServiceWorker] Caching app shell');
-        return cache.addAll(urlsToCache.filter(url => {
-          // 존재하는 파일만 캐시
-          return fetch(url, { method: 'HEAD' })
-            .then(() => true)
-            .catch(() => false);
-        }));
-      })
-      .catch(err => {
-        console.error('[ServiceWorker] Cache failed:', err);
+        
+        // 각 URL을 개별적으로 시도
+        const cachePromises = urlsToCache.map(url => {
+          return cache.add(url).catch(err => {
+            console.warn(`[ServiceWorker] Failed to cache ${url}:`, err);
+            return Promise.resolve(); // 실패해도 계속 진행
+          });
+        });
+        
+        return Promise.all(cachePromises);
       })
   );
   
-  // 즉시 활성화
   self.skipWaiting();
 });
 
-// Activate 이벤트 - 이전 캐시 정리
+// Activate 이벤트
 self.addEventListener('activate', event => {
   console.log('[ServiceWorker] Activate');
   
@@ -56,7 +59,7 @@ self.addEventListener('activate', event => {
     caches.keys().then(cacheNames => {
       return Promise.all(
         cacheNames.map(cacheName => {
-          if (cacheName !== CACHE_NAME) {
+          if (cacheName !== CACHE_NAME && cacheName.startsWith('wia-')) {
             console.log('[ServiceWorker] Removing old cache:', cacheName);
             return caches.delete(cacheName);
           }
@@ -65,12 +68,21 @@ self.addEventListener('activate', event => {
     })
   );
   
-  // 즉시 제어 획득
   return self.clients.claim();
 });
 
-// Fetch 이벤트 - 캐시 우선 전략
+// Fetch 이벤트
 self.addEventListener('fetch', event => {
+  // chrome-extension:// 스킴은 무시
+  if (event.request.url.startsWith('chrome-extension://')) {
+    return;
+  }
+  
+  // DevTools 관련 요청 무시
+  if (event.request.url.includes('chrome-devtools://')) {
+    return;
+  }
+  
   // POST 요청은 캐시하지 않음
   if (event.request.method !== 'GET') {
     return;
@@ -80,13 +92,8 @@ self.addEventListener('fetch', event => {
     caches.match(event.request)
       .then(response => {
         if (response) {
-          // 캐시에서 발견
-          console.log('[ServiceWorker] From cache:', event.request.url);
           return response;
         }
-        
-        // 네트워크에서 가져오기
-        console.log('[ServiceWorker] Fetching:', event.request.url);
         
         return fetch(event.request).then(response => {
           // 유효한 응답만 캐시
@@ -94,78 +101,25 @@ self.addEventListener('fetch', event => {
             return response;
           }
           
-          // 응답 복제 (캐시용)
-          const responseToCache = response.clone();
-          
-          caches.open(CACHE_NAME)
-            .then(cache => {
+          // chrome-extension 스킴이 아닌 경우만 캐시
+          if (!event.request.url.startsWith('chrome-extension://')) {
+            const responseToCache = response.clone();
+            
+            caches.open(CACHE_NAME).then(cache => {
               cache.put(event.request, responseToCache);
             });
+          }
           
           return response;
         });
       })
       .catch(() => {
-        // 오프라인 페이지 제공
-        console.log('[ServiceWorker] Offline mode');
-        
-        // HTML 요청인 경우 오프라인 페이지
+        // 오프라인 폴백
         if (event.request.destination === 'document') {
           return caches.match('/wia-reader.html');
-        }
-        
-        // 이미지 요청인 경우 기본 아이콘
-        if (event.request.destination === 'image') {
-          return caches.match('/icons/icon-192x192.png');
         }
       })
   );
 });
 
-// 백그라운드 동기화
-self.addEventListener('sync', event => {
-  console.log('[ServiceWorker] Sync event:', event.tag);
-  
-  if (event.tag === 'sync-wia-data') {
-    event.waitUntil(syncData());
-  }
-});
-
-// 푸시 알림
-self.addEventListener('push', event => {
-  console.log('[ServiceWorker] Push received');
-  
-  const options = {
-    body: event.data ? event.data.text() : 'WIA Neural Code 알림',
-    icon: '/icons/icon-192x192.png',
-    badge: '/icons/icon-72x72.png',
-    vibrate: [100, 50, 100],
-    data: {
-      dateOfArrival: Date.now(),
-      primaryKey: 1
-    }
-  };
-  
-  event.waitUntil(
-    self.registration.showNotification('WIA Neural Code', options)
-  );
-});
-
-// 데이터 동기화 함수
-async function syncData() {
-  console.log('[ServiceWorker] Syncing data...');
-  // 실제 동기화 로직 구현
-  return true;
-}
-
-// 캐시 크기 관리
-async function trimCache(cacheName, maxItems) {
-  const cache = await caches.open(cacheName);
-  const keys = await cache.keys();
-  if (keys.length > maxItems) {
-    await cache.delete(keys[0]);
-    await trimCache(cacheName, maxItems);
-  }
-}
-
-console.log('[ServiceWorker] Loaded successfully');
+console.log('[ServiceWorker] Loaded successfully v1.1.0');
