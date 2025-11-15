@@ -55,6 +55,7 @@ class PDFToEPUBConverter:
         # Metadata storage
         self.metadata: Dict[str, Any] = {}
         self.content: list = []
+        self.validation_result = None  # Store validation result
 
     def extract_metadata(self) -> Dict[str, Any]:
         """
@@ -137,29 +138,58 @@ class PDFToEPUBConverter:
                                     'page': page_num
                                 })
 
-                    # Extract images (if any)
+                    # Extract images (if any) - Enhanced extraction
                     try:
-                        if '/XObject' in page['/Resources']:
-                            xobjects = page['/Resources']['/XObject'].get_object()
+                        if '/Resources' in page:
+                            resources = page['/Resources']
+                            if resources and '/XObject' in resources:
+                                xobjects = resources['/XObject']
+                                if xobjects:
+                                    xobjects = xobjects.get_object() if hasattr(xobjects, 'get_object') else xobjects
 
-                            for obj_name in xobjects:
-                                obj = xobjects[obj_name]
+                                    for obj_name in xobjects:
+                                        try:
+                                            obj = xobjects[obj_name]
+                                            if hasattr(obj, 'get_object'):
+                                                obj = obj.get_object()
 
-                                if obj['/Subtype'] == '/Image':
-                                    # Extract image data
-                                    image_data = self._extract_image(obj)
-                                    if image_data:
-                                        content_blocks.append({
-                                            'type': 'image',
-                                            'data': image_data,
-                                            'page': page_num,
-                                            'name': f'image_p{page_num}_{obj_name[1:]}'
-                                        })
+                                            # Check if it's an image
+                                            if '/Subtype' in obj and obj['/Subtype'] == '/Image':
+                                                # Extract image data with enhanced error handling
+                                                image_data = self._extract_image(obj)
+                                                if image_data:
+                                                    # Generate unique, safe filename
+                                                    obj_name_clean = obj_name[1:] if obj_name.startswith('/') else obj_name
+                                                    # Remove any invalid filename characters
+                                                    obj_name_clean = ''.join(c if c.isalnum() or c in '-_' else '_' for c in obj_name_clean)
+
+                                                    img_filename = f'img_page{page_num:03d}_{obj_name_clean}.png'
+
+                                                    content_blocks.append({
+                                                        'type': 'image',
+                                                        'data': image_data,
+                                                        'page': page_num,
+                                                        'name': img_filename
+                                                    })
+                                                    logger.debug(f"Extracted image: {img_filename} ({len(image_data)} bytes)")
+                                        except Exception as obj_error:
+                                            logger.warning(f"Error extracting image object '{obj_name}' on page {page_num}: {obj_error}")
+                                            continue
                     except Exception as img_error:
-                        logger.warning(f"Error extracting images from page {page_num}: {img_error}")
+                        logger.warning(f"Error accessing images on page {page_num}: {img_error}")
 
                 self.content = content_blocks
-                logger.info(f"Extracted {len(content_blocks)} content blocks")
+
+                # Log extraction summary
+                num_paragraphs = sum(1 for b in content_blocks if b['type'] == 'paragraph')
+                num_formulas = sum(1 for b in content_blocks if b['type'] == 'formula')
+                num_images = sum(1 for b in content_blocks if b['type'] == 'image')
+
+                logger.info(f"Extracted {len(content_blocks)} content blocks:")
+                logger.info(f"  - Paragraphs: {num_paragraphs}")
+                logger.info(f"  - Formulas: {num_formulas}")
+                logger.info(f"  - Images: {num_images}")
+
                 return content_blocks
 
         except Exception as e:
@@ -168,32 +198,119 @@ class PDFToEPUBConverter:
 
     def _extract_image(self, image_obj) -> Optional[bytes]:
         """
-        Extract image data from PDF image object
+        Enhanced image extraction from PDF with support for multiple formats and filters
 
         Args:
             image_obj: PDF image object
 
         Returns:
-            Image data as bytes or None if extraction fails
+            Image data as bytes (PNG format) or None if extraction fails
         """
         try:
-            # Get image data
-            data = image_obj.get_data()
+            # Get basic image properties
+            width = image_obj.get('/Width', 0)
+            height = image_obj.get('/Height', 0)
 
-            # Try to open with PIL to verify it's valid
-            img = Image.open(io.BytesIO(data))
+            if width == 0 or height == 0:
+                logger.debug("Skipping image with zero dimensions")
+                return None
 
-            # Convert to RGB if necessary
-            if img.mode not in ('RGB', 'L'):
+            # Try to get image data using get_data() method
+            try:
+                data = image_obj.get_data()
+            except Exception as data_error:
+                # Fallback: try direct data access
+                logger.debug(f"get_data() failed, trying direct access: {data_error}")
+                try:
+                    data = image_obj._data
+                except:
+                    logger.warning("Could not access image data")
+                    return None
+
+            if not data or len(data) == 0:
+                logger.debug("Empty image data")
+                return None
+
+            # Try to open and process with PIL
+            try:
+                img = Image.open(io.BytesIO(data))
+            except Exception as pil_error:
+                # Fallback: try to determine filter and decode manually
+                logger.debug(f"PIL open failed: {pil_error}, trying manual decode")
+
+                filter_type = image_obj.get('/Filter', '')
+                color_space = image_obj.get('/ColorSpace', '')
+
+                # Handle different filter types
+                if filter_type == '/DCTDecode':
+                    # JPEG - try to open directly
+                    try:
+                        img = Image.open(io.BytesIO(data))
+                    except:
+                        logger.warning("Failed to decode DCT/JPEG image")
+                        return None
+                elif filter_type == '/FlateDecode':
+                    # Deflate/zlib compressed - PIL should handle this
+                    logger.warning("Failed to decode Flate compressed image")
+                    return None
+                else:
+                    logger.warning(f"Unsupported filter type: {filter_type}")
+                    return None
+
+            # Validate image dimensions
+            if img.width == 0 or img.height == 0:
+                logger.debug("Image has zero width or height")
+                return None
+
+            # Skip very small images (likely artifacts)
+            if img.width < 10 and img.height < 10:
+                logger.debug(f"Skipping tiny image: {img.width}x{img.height}")
+                return None
+
+            # Convert to appropriate mode
+            if img.mode in ('RGBA', 'LA', 'PA'):
+                # Has alpha channel - preserve it
+                if img.mode != 'RGBA':
+                    img = img.convert('RGBA')
+            elif img.mode in ('RGB', 'L'):
+                # Already in supported mode
+                pass
+            elif img.mode == '1':
+                # 1-bit images - convert to grayscale
+                img = img.convert('L')
+            elif img.mode == 'P':
+                # Palette mode - convert to RGB
                 img = img.convert('RGB')
+            elif img.mode == 'CMYK':
+                # CMYK - convert to RGB
+                img = img.convert('RGB')
+            else:
+                # Other modes - try to convert to RGB
+                logger.debug(f"Converting image mode {img.mode} to RGB")
+                try:
+                    img = img.convert('RGB')
+                except:
+                    img = img.convert('L')
 
-            # Save to bytes
+            # Save to PNG bytes with optimization
             output = io.BytesIO()
-            img.save(output, format='PNG')
-            return output.getvalue()
+
+            # Use appropriate format based on transparency
+            if img.mode in ('RGBA', 'LA'):
+                img.save(output, format='PNG', optimize=True)
+            else:
+                # For images without alpha, we can use RGB or L
+                img.save(output, format='PNG', optimize=True)
+
+            png_data = output.getvalue()
+
+            logger.debug(f"Successfully extracted image: {img.width}x{img.height}, {img.mode}, {len(png_data)} bytes")
+            return png_data
 
         except Exception as e:
-            logger.warning(f"Failed to extract image: {e}")
+            logger.warning(f"Failed to extract image: {type(e).__name__}: {e}")
+            import traceback
+            logger.debug(f"Traceback: {traceback.format_exc()}")
             return None
 
     def convert(self) -> Path:
@@ -240,20 +357,29 @@ class PDFToEPUBConverter:
                         alt_text=f"Image from page {block.get('page', 'unknown')}"
                     )
 
-            # Generate EPUB file
-            self.epub_builder.build(str(self.output_path))
-            logger.info(f"EPUB file created: {self.output_path}")
+            # Generate EPUB file with auto-validation and auto-fix
+            logger.info("Building EPUB file with auto-validation...")
+            validation_result = self.epub_builder.build(
+                str(self.output_path),
+                auto_validate=True,
+                auto_fix=True
+            )
 
-            # Step 4: Validate EPUB
-            logger.info("Validating EPUB file")
-            is_valid, errors = self.validator.validate(str(self.output_path))
+            # Store validation result for stats
+            self.validation_result = validation_result
 
-            if is_valid:
-                logger.info("✓ EPUB validation passed!")
+            # Summary of validation
+            if validation_result:
+                if validation_result.is_valid:
+                    logger.info("✓ EPUB conversion complete and validated successfully!")
+                else:
+                    logger.warning(f"⚠ EPUB created but has validation issues:")
+                    logger.warning(f"  - Errors: {validation_result.error_count}")
+                    logger.warning(f"  - Warnings: {validation_result.warning_count}")
+                    logger.warning("ℹ Run with --verbose to see detailed error list")
             else:
-                logger.warning(f"✗ EPUB validation failed with {len(errors)} errors:")
-                for error in errors[:10]:  # Show first 10 errors
-                    logger.warning(f"  - {error}")
+                logger.info(f"✓ EPUB file created: {self.output_path}")
+                logger.info("ℹ Validation skipped or not available")
 
             return self.output_path
 
@@ -268,7 +394,7 @@ class PDFToEPUBConverter:
         Returns:
             Dictionary with conversion statistics
         """
-        return {
+        stats = {
             'input_file': str(self.pdf_path),
             'output_file': str(self.output_path),
             'num_pages': self.metadata.get('num_pages', 0),
@@ -276,6 +402,20 @@ class PDFToEPUBConverter:
             'title': self.metadata.get('title', ''),
             'author': self.metadata.get('author', '')
         }
+
+        # Add validation statistics if available
+        if self.validation_result:
+            stats['validation'] = {
+                'is_valid': self.validation_result.is_valid,
+                'errors': self.validation_result.error_count,
+                'warnings': self.validation_result.warning_count,
+                'info': self.validation_result.info_count,
+                'fixable_errors': self.validation_result.fixable_count
+            }
+        else:
+            stats['validation'] = None
+
+        return stats
 
 
 def main():
@@ -318,7 +458,7 @@ def main():
         # Display statistics
         stats = converter.get_conversion_stats()
         print("\n" + "="*50)
-        print("Conversion Complete!")
+        print("PDF to EPUB Conversion Complete!")
         print("="*50)
         print(f"Input:  {stats['input_file']}")
         print(f"Output: {stats['output_file']}")
@@ -326,6 +466,21 @@ def main():
         print(f"Blocks: {stats['num_content_blocks']}")
         print(f"Title:  {stats['title']}")
         print(f"Author: {stats['author']}")
+
+        # Display validation results
+        if stats.get('validation'):
+            val = stats['validation']
+            print("\n" + "-"*50)
+            print("EPUB Validation Results:")
+            print("-"*50)
+            if val['is_valid']:
+                print("✓ Status: VALID (No errors)")
+            else:
+                print(f"⚠ Status: INVALID")
+                print(f"  - Errors:   {val['errors']} ({val['fixable_errors']} auto-fixed)")
+                print(f"  - Warnings: {val['warnings']}")
+                print(f"  - Info:     {val['info']}")
+
         print("="*50)
 
         return 0

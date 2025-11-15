@@ -301,12 +301,17 @@ class EPUBBuilder:
             })
             self.current_chapter = []
 
-    def build(self, output_path: str):
+    def build(self, output_path: str, auto_validate: bool = True, auto_fix: bool = True):
         """
-        Build the EPUB file with full EPUB 3.x compliance
+        Build the EPUB file with full EPUB 3.x compliance and auto-validation
 
         Args:
             output_path: Path where EPUB file will be created
+            auto_validate: Enable automatic validation after build (default: True)
+            auto_fix: Enable automatic error fixing (default: True)
+
+        Returns:
+            ValidationResult if auto_validate=True, None otherwise
         """
         logger.info(f"Building enhanced EPUB 3.x: {output_path}")
 
@@ -358,6 +363,81 @@ class EPUBBuilder:
                 epub.writestr(filename, font['data'])
 
         logger.info(f"✓ Enhanced EPUB 3.x created successfully: {output_path}")
+
+        # Auto-validation and fixing pipeline
+        if auto_validate:
+            try:
+                from validator import EPUBValidator
+
+                logger.info("🔍 Starting automatic EPUB validation...")
+                validator = EPUBValidator()
+                result = validator.validate(str(output_path))
+
+                if result.is_valid:
+                    logger.info("✓ EPUB validation passed! No errors found.")
+                    return result
+
+                # Show validation results
+                logger.warning(f"⚠ EPUB validation found issues:")
+                logger.warning(f"  - Errors: {result.error_count}")
+                logger.warning(f"  - Warnings: {result.warning_count}")
+                logger.warning(f"  - Fixable errors: {result.fixable_count}")
+
+                # Auto-fix if enabled and fixable errors exist
+                if auto_fix and result.fixable_count > 0:
+                    logger.info(f"🔧 Attempting to auto-fix {result.fixable_count} errors...")
+                    fixed_path, new_result = validator.auto_fix(str(output_path), result)
+
+                    if new_result.is_valid:
+                        logger.info("✓ Auto-fix successful! EPUB is now valid.")
+                        # Replace original with fixed version
+                        import shutil
+                        shutil.move(fixed_path, str(output_path))
+                        logger.info(f"✓ Fixed EPUB saved to: {output_path}")
+                        return new_result
+                    else:
+                        logger.warning(f"⚠ Auto-fix incomplete. Remaining issues:")
+                        logger.warning(f"  - Errors: {new_result.error_count}")
+                        logger.warning(f"  - Warnings: {new_result.warning_count}")
+
+                        # Show first few remaining errors
+                        for i, error in enumerate(new_result.errors[:5], 1):
+                            logger.warning(f"  {i}. [{error.code}] {error.message}")
+                            if error.location:
+                                logger.warning(f"     Location: {error.location}")
+
+                        if new_result.error_count > 5:
+                            logger.warning(f"  ... and {new_result.error_count - 5} more errors")
+
+                        return new_result
+                else:
+                    # No auto-fix or no fixable errors
+                    if not auto_fix:
+                        logger.info("ℹ Auto-fix disabled. Use auto_fix=True to enable automatic fixing.")
+                    elif result.fixable_count == 0:
+                        logger.info("ℹ No automatically fixable errors found.")
+
+                    # Show first few errors
+                    for i, error in enumerate(result.errors[:5], 1):
+                        logger.warning(f"  {i}. [{error.code}] {error.message}")
+                        if error.location:
+                            logger.warning(f"     Location: {error.location}")
+
+                    if result.error_count > 5:
+                        logger.warning(f"  ... and {result.error_count - 5} more errors")
+
+                    return result
+
+            except ImportError as e:
+                logger.warning(f"⚠ Validator not available: {e}")
+                logger.warning("ℹ EPUB created but not validated. Install epubcheck for validation.")
+                return None
+            except Exception as e:
+                logger.error(f"✗ Validation error: {e}")
+                logger.warning("ℹ EPUB created but validation failed.")
+                return None
+
+        return None
 
     def _create_container_xml(self) -> str:
         """Create META-INF/container.xml"""

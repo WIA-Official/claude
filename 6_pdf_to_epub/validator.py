@@ -600,7 +600,7 @@ class EPUBValidator:
 
     def _fix_missing_files(self, extract_dir: str, error: ValidationError) -> bool:
         """
-        Fix missing file errors by removing references
+        Fix missing file errors (PKG-021) by removing references
 
         Args:
             extract_dir: Extracted EPUB directory
@@ -609,13 +609,12 @@ class EPUBValidator:
         Returns:
             True if fixed
         """
-        # For now, remove references to missing files from manifest
-        # TODO: Implement better image recovery
-        return False
+        # PKG-021 errors are similar to RSC-007, use the same logic
+        return self._fix_missing_resources(extract_dir, error)
 
     def _fix_missing_resources(self, extract_dir: str, error: ValidationError) -> bool:
         """
-        Fix missing resource errors
+        Fix missing resource errors (fonts, images, etc.)
 
         Args:
             extract_dir: Extracted EPUB directory
@@ -624,8 +623,217 @@ class EPUBValidator:
         Returns:
             True if fixed
         """
-        # TODO: Implement resource fixing
-        return False
+        fixed = False
+
+        try:
+            # Determine resource type from error message
+            error_msg = error.message.lower()
+
+            # Fix missing fonts
+            if 'font' in error_msg or error.location and 'fonts/' in error.location:
+                logger.info("Fixing missing font resources...")
+                fixed = self._fix_missing_fonts(extract_dir, error)
+
+            # Fix missing images
+            elif 'image' in error_msg or error.location and 'images/' in error.location:
+                logger.info("Fixing missing image references...")
+                fixed = self._fix_missing_images(extract_dir, error)
+
+            # Generic missing file
+            else:
+                logger.debug(f"Attempting to fix missing resource: {error.location}")
+                # Try to remove references to missing file
+                fixed = self._remove_resource_references(extract_dir, error.location)
+
+        except Exception as e:
+            logger.warning(f"Error fixing missing resources: {e}")
+
+        return fixed
+
+    def _fix_missing_fonts(self, extract_dir: str, error: ValidationError) -> bool:
+        """
+        Fix missing font errors by removing @font-face rules or replacing with generic fonts
+
+        Args:
+            extract_dir: Extracted EPUB directory
+            error: Validation error
+
+        Returns:
+            True if fixed
+        """
+        fixed = False
+
+        # Find CSS files
+        for root, dirs, files in os.walk(extract_dir):
+            for file in files:
+                if file.endswith('.css'):
+                    file_path = os.path.join(root, file)
+
+                    try:
+                        with open(file_path, 'r', encoding='utf-8') as f:
+                            content = f.read()
+
+                        original_content = content
+
+                        # Remove @font-face rules that reference missing fonts
+                        # Pattern: @font-face { ... src: url(...) ... }
+                        import re
+                        font_face_pattern = re.compile(
+                            r'@font-face\s*\{[^}]*?\}',
+                            re.DOTALL | re.IGNORECASE
+                        )
+
+                        def check_and_remove_font_face(match):
+                            nonlocal fixed
+                            font_face_rule = match.group(0)
+
+                            # Extract font file references
+                            url_pattern = re.compile(r'url\([\'"]?\.\./(fonts/[^\'")\s]+)[\'"]?\)')
+                            urls = url_pattern.findall(font_face_rule)
+
+                            for url in urls:
+                                # Check if font file exists
+                                font_path = os.path.join(extract_dir, 'OEBPS', url)
+                                if not os.path.exists(font_path):
+                                    logger.debug(f"Removing @font-face rule for missing font: {url}")
+                                    fixed = True
+                                    return ''  # Remove the entire @font-face rule
+
+                            return match.group(0)  # Keep if font exists
+
+                        content = font_face_pattern.sub(check_and_remove_font_face, content)
+
+                        # Also replace font-family references to custom fonts with generic ones
+                        if fixed:
+                            # Replace CustomFont with generic serif
+                            content = re.sub(
+                                r'font-family:\s*[\'"]?CustomFont[\'"]?',
+                                'font-family: serif',
+                                content,
+                                flags=re.IGNORECASE
+                            )
+
+                        # Write back if changed
+                        if content != original_content:
+                            with open(file_path, 'w', encoding='utf-8') as f:
+                                f.write(content)
+                            logger.debug(f"Fixed font references in {file}")
+
+                    except Exception as e:
+                        logger.warning(f"Error fixing fonts in {file}: {e}")
+
+        return fixed
+
+    def _fix_missing_images(self, extract_dir: str, error: ValidationError) -> bool:
+        """
+        Fix missing image references by removing img tags or creating placeholder
+
+        Args:
+            extract_dir: Extracted EPUB directory
+            error: Validation error
+
+        Returns:
+            True if fixed
+        """
+        fixed = False
+
+        # Extract missing image path from error
+        missing_image = None
+        if error.location:
+            import re
+            match = re.search(r'images/([^\s\'"]+)', error.location)
+            if match:
+                missing_image = match.group(1)
+
+        if not missing_image:
+            return False
+
+        # Find XHTML files and remove references
+        for root, dirs, files in os.walk(extract_dir):
+            for file in files:
+                if file.endswith('.xhtml') or file.endswith('.html'):
+                    file_path = os.path.join(root, file)
+
+                    try:
+                        with open(file_path, 'r', encoding='utf-8') as f:
+                            content = f.read()
+
+                        original_content = content
+
+                        # Remove img tags referencing missing image
+                        import re
+                        pattern = re.compile(
+                            rf'<img[^>]*src=[\'"]?[^\'"]*{re.escape(missing_image)}[\'"]?[^>]*/?>',
+                            re.IGNORECASE
+                        )
+                        content = pattern.sub('<!-- Image removed: missing file -->', content)
+
+                        # Remove figure tags containing missing images
+                        figure_pattern = re.compile(
+                            rf'<figure[^>]*>.*?{re.escape(missing_image)}.*?</figure>',
+                            re.DOTALL | re.IGNORECASE
+                        )
+                        content = figure_pattern.sub('', content)
+
+                        if content != original_content:
+                            with open(file_path, 'w', encoding='utf-8') as f:
+                                f.write(content)
+                            logger.debug(f"Removed missing image references in {file}")
+                            fixed = True
+
+                    except Exception as e:
+                        logger.warning(f"Error fixing images in {file}: {e}")
+
+        return fixed
+
+    def _remove_resource_references(self, extract_dir: str, resource_path: Optional[str]) -> bool:
+        """
+        Remove references to missing resources from manifest
+
+        Args:
+            extract_dir: Extracted EPUB directory
+            resource_path: Path to missing resource
+
+        Returns:
+            True if fixed
+        """
+        if not resource_path:
+            return False
+
+        fixed = False
+
+        # Find and update content.opf
+        for root, dirs, files in os.walk(extract_dir):
+            for file in files:
+                if file == 'content.opf' or file.endswith('.opf'):
+                    file_path = os.path.join(root, file)
+
+                    try:
+                        with open(file_path, 'r', encoding='utf-8') as f:
+                            content = f.read()
+
+                        original_content = content
+
+                        # Remove manifest item referencing missing resource
+                        import re
+                        # Extract just the filename from the path
+                        filename = os.path.basename(resource_path)
+                        pattern = re.compile(
+                            rf'<item[^>]*href=[\'"]?[^\'"]*{re.escape(filename)}[\'"]?[^>]*/?>',
+                            re.IGNORECASE
+                        )
+                        content = pattern.sub('', content)
+
+                        if content != original_content:
+                            with open(file_path, 'w', encoding='utf-8') as f:
+                                f.write(content)
+                            logger.debug(f"Removed manifest entry for missing resource: {filename}")
+                            fixed = True
+
+                    except Exception as e:
+                        logger.warning(f"Error updating manifest: {e}")
+
+        return fixed
 
     def _repackage_epub(self, extract_dir: str, output_path: str):
         """
