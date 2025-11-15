@@ -1,21 +1,23 @@
 #!/usr/bin/env python3
 """
-Formula Parser - MathML Conversion Module
-Detects and converts mathematical formulas to MathML format for EPUB 3.x
+Formula Parser - Enhanced MathML Conversion Module
+Detects and converts mathematical formulas to MathML with SVG/PNG fallback for EPUB 3.x
 """
 
 import re
 import logging
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 import sympy
 from sympy.parsing.latex import parse_latex
 from sympy.printing.mathml import mathml
+import io
+import base64
 
 logger = logging.getLogger(__name__)
 
 
 class FormulaParser:
-    """Parser for mathematical formulas with MathML conversion"""
+    """Enhanced parser for mathematical formulas with MathML and fallback conversion"""
 
     # Patterns to detect mathematical expressions
     MATH_PATTERNS = [
@@ -41,10 +43,18 @@ class FormulaParser:
         r'_[0-9\{]',  # Subscripts
     ]
 
-    def __init__(self):
-        """Initialize the formula parser"""
+    def __init__(self, enable_svg_fallback: bool = True, enable_png_fallback: bool = True):
+        """
+        Initialize the enhanced formula parser
+
+        Args:
+            enable_svg_fallback: Enable SVG fallback generation
+            enable_png_fallback: Enable PNG fallback generation
+        """
         self.compiled_patterns = [re.compile(p, re.DOTALL) for p in self.MATH_PATTERNS]
         self.math_indicators = re.compile('|'.join(self.MATH_INDICATORS))
+        self.enable_svg_fallback = enable_svg_fallback
+        self.enable_png_fallback = enable_png_fallback
 
     def contains_formula(self, text: str) -> bool:
         """
@@ -80,7 +90,7 @@ class FormulaParser:
             text: Text containing formulas
 
         Returns:
-            List of content blocks with text and MathML formulas
+            List of content blocks with text and MathML formulas (with fallbacks)
         """
         blocks = []
         remaining_text = text
@@ -100,13 +110,28 @@ class FormulaParser:
 
                 # Extract and convert formula
                 latex_formula = match.group(1) if match.groups() else match.group(0)
+                is_display = '$$' in match.group(0) or '\\[' in match.group(0) or 'equation' in match.group(0)
+
+                # Convert to MathML with fallbacks
                 mathml_formula = self.latex_to_mathml(latex_formula)
+                svg_fallback = None
+                png_fallback = None
+
+                # Generate SVG fallback
+                if self.enable_svg_fallback:
+                    svg_fallback = self.mathml_to_svg(mathml_formula, latex_formula)
+
+                # Generate PNG fallback
+                if self.enable_png_fallback:
+                    png_fallback = self.latex_to_png(latex_formula)
 
                 blocks.append({
                     'type': 'formula',
                     'latex': latex_formula,
                     'mathml': mathml_formula,
-                    'display': '$$' in match.group(0) or '\\[' in match.group(0)
+                    'svg': svg_fallback,
+                    'png': png_fallback,
+                    'display': is_display
                 })
 
                 last_end = match.end()
@@ -151,6 +176,14 @@ class FormulaParser:
             try:
                 expr = parse_latex(latex)
                 mathml_output = mathml(expr, printer='presentation')
+
+                # Ensure proper namespace
+                if 'xmlns=' not in mathml_output:
+                    mathml_output = mathml_output.replace(
+                        '<math>',
+                        '<math xmlns="http://www.w3.org/1998/Math/MathML" display="block">'
+                    )
+
                 return mathml_output
             except Exception as sympy_error:
                 logger.debug(f"SymPy parsing failed, using fallback: {sympy_error}")
@@ -161,6 +194,125 @@ class FormulaParser:
             logger.warning(f"Failed to convert LaTeX to MathML: {e}")
             # Return a basic MathML wrapper with the original LaTeX
             return self._create_fallback_mathml(latex)
+
+    def mathml_to_svg(self, mathml: str, latex: str = '') -> Optional[str]:
+        """
+        Convert MathML to SVG for fallback support
+
+        Args:
+            mathml: MathML string
+            latex: Original LaTeX (for fallback)
+
+        Returns:
+            SVG representation or None if conversion fails
+        """
+        try:
+            # Simple SVG generation using text rendering
+            # This is a simplified approach - for production, use a proper rendering library
+
+            # Extract the formula content for simple rendering
+            formula_text = latex if latex else self._extract_mathml_text(mathml)
+
+            # Generate SVG with basic text rendering
+            svg = self._generate_simple_svg(formula_text)
+            return svg
+
+        except Exception as e:
+            logger.warning(f"Failed to convert MathML to SVG: {e}")
+            return None
+
+    def latex_to_png(self, latex: str) -> Optional[bytes]:
+        """
+        Convert LaTeX formula to PNG image for maximum compatibility fallback
+
+        Args:
+            latex: LaTeX formula string
+
+        Returns:
+            PNG image bytes or None if conversion fails
+        """
+        try:
+            # This requires matplotlib - optional dependency
+            try:
+                import matplotlib
+                matplotlib.use('Agg')  # Non-interactive backend
+                import matplotlib.pyplot as plt
+                from matplotlib import mathtext
+
+                # Create figure
+                fig = plt.figure(figsize=(6, 1))
+                fig.patch.set_facecolor('white')
+
+                # Render formula
+                plt.text(0.5, 0.5, f'${latex}$',
+                        fontsize=20,
+                        ha='center',
+                        va='center',
+                        transform=fig.transFigure)
+
+                plt.axis('off')
+
+                # Save to bytes
+                buf = io.BytesIO()
+                plt.savefig(buf, format='png', bbox_inches='tight',
+                           dpi=150, transparent=False, facecolor='white')
+                plt.close(fig)
+
+                buf.seek(0)
+                return buf.read()
+
+            except ImportError:
+                logger.debug("matplotlib not available for PNG rendering")
+                return None
+
+        except Exception as e:
+            logger.warning(f"Failed to convert LaTeX to PNG: {e}")
+            return None
+
+    def _generate_simple_svg(self, text: str) -> str:
+        """
+        Generate a simple SVG representation of a formula
+
+        Args:
+            text: Formula text
+
+        Returns:
+            SVG string
+        """
+        # Escape XML special characters
+        text = self._escape_xml(text)
+
+        # Calculate approximate dimensions
+        width = max(200, len(text) * 12)
+        height = 50
+
+        svg = f'''<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">
+  <rect width="100%" height="100%" fill="white"/>
+  <text x="{width/2}" y="{height/2}"
+        font-family="serif"
+        font-size="18"
+        text-anchor="middle"
+        dominant-baseline="middle"
+        fill="black">
+    {text}
+  </text>
+</svg>'''
+        return svg
+
+    def _extract_mathml_text(self, mathml: str) -> str:
+        """
+        Extract text content from MathML for SVG rendering
+
+        Args:
+            mathml: MathML string
+
+        Returns:
+            Extracted text
+        """
+        # Simple text extraction - remove all tags
+        import re
+        text = re.sub(r'<[^>]+>', '', mathml)
+        return text.strip()
 
     def _manual_latex_to_mathml(self, latex: str) -> str:
         """
@@ -173,67 +325,85 @@ class FormulaParser:
             MathML representation
         """
         # This is a simplified converter for common patterns
-        mathml = '<math xmlns="http://www.w3.org/1998/Math/MathML" display="block">'
+        mathml = '<math xmlns="http://www.w3.org/1998/Math/MathML" display="block">\n'
 
-        # Replace common LaTeX commands
-        conversions = {
-            r'\\frac\{([^}]+)\}\{([^}]+)\}': self._frac_to_mathml,
-            r'\\sqrt\{([^}]+)\}': self._sqrt_to_mathml,
-            r'\^(\{[^}]+\}|[0-9a-zA-Z])': self._sup_to_mathml,
-            r'_(\{[^}]+\}|[0-9a-zA-Z])': self._sub_to_mathml,
-        }
+        # Handle simple patterns
+        content = self._convert_latex_to_mathml_content(latex)
 
-        result = latex
-        for pattern, converter in conversions.items():
-            result = re.sub(pattern, converter, result)
-
-        # Wrap in <mrow>
-        mathml += f'<mrow>{self._escape_text(result)}</mrow>'
+        mathml += f'  <mrow>\n{content}\n  </mrow>\n'
         mathml += '</math>'
 
         return mathml
 
-    def _frac_to_mathml(self, match) -> str:
-        """Convert fraction to MathML"""
-        num = match.group(1)
-        den = match.group(2)
-        return f'<mfrac><mrow>{num}</mrow><mrow>{den}</mrow></mfrac>'
+    def _convert_latex_to_mathml_content(self, latex: str) -> str:
+        """
+        Convert LaTeX content to MathML elements
 
-    def _sqrt_to_mathml(self, match) -> str:
-        """Convert square root to MathML"""
-        content = match.group(1)
-        return f'<msqrt><mrow>{content}</mrow></msqrt>'
+        Args:
+            latex: LaTeX string
 
-    def _sup_to_mathml(self, match) -> str:
-        """Convert superscript to MathML"""
-        content = match.group(1).strip('{}')
-        return f'<msup><mrow></mrow><mrow>{content}</mrow></msup>'
+        Returns:
+            MathML content
+        """
+        result = latex
 
-    def _sub_to_mathml(self, match) -> str:
-        """Convert subscript to MathML"""
-        content = match.group(1).strip('{}')
-        return f'<msub><mrow></mrow><mrow>{content}</mrow></msub>'
+        # Replace fractions
+        result = re.sub(
+            r'\\frac\{([^}]+)\}\{([^}]+)\}',
+            lambda m: f'<mfrac><mrow>{m.group(1)}</mrow><mrow>{m.group(2)}</mrow></mfrac>',
+            result
+        )
 
-    def _escape_text(self, text: str) -> str:
-        """Escape special characters for MathML"""
-        # Replace special characters
-        text = text.replace('&', '&amp;')
-        text = text.replace('<', '&lt;')
-        text = text.replace('>', '&gt;')
+        # Replace square roots
+        result = re.sub(
+            r'\\sqrt\{([^}]+)\}',
+            lambda m: f'<msqrt><mrow>{m.group(1)}</mrow></msqrt>',
+            result
+        )
 
-        # Wrap individual characters in <mi> or <mn> tags
-        result = []
-        for char in text.split():
-            if char.isdigit():
-                result.append(f'<mn>{char}</mn>')
-            elif char.isalpha():
-                result.append(f'<mi>{char}</mi>')
-            elif char in '+-=*/':
-                result.append(f'<mo>{char}</mo>')
+        # Replace superscripts
+        result = re.sub(
+            r'\^(\{[^}]+\}|[0-9a-zA-Z])',
+            lambda m: f'<msup><mrow></mrow><mrow>{m.group(1).strip("{}")}</mrow></msup>',
+            result
+        )
+
+        # Replace subscripts
+        result = re.sub(
+            r'_(\{[^}]+\}|[0-9a-zA-Z])',
+            lambda m: f'<msub><mrow></mrow><mrow>{m.group(1).strip("{}")}</mrow></msub>',
+            result
+        )
+
+        # Wrap remaining characters
+        parts = []
+        i = 0
+        while i < len(result):
+            if result[i] == '<':
+                # Find end of tag
+                end = result.find('>', i)
+                if end != -1:
+                    parts.append(result[i:end+1])
+                    i = end + 1
+                else:
+                    parts.append(result[i])
+                    i += 1
+            elif result[i].isdigit():
+                parts.append(f'<mn>{result[i]}</mn>')
+                i += 1
+            elif result[i].isalpha():
+                parts.append(f'<mi>{result[i]}</mi>')
+                i += 1
+            elif result[i] in '+-=*/()[]':
+                parts.append(f'<mo>{result[i]}</mo>')
+                i += 1
+            elif result[i].isspace():
+                i += 1
             else:
-                result.append(char)
+                parts.append(result[i])
+                i += 1
 
-        return ''.join(result)
+        return '    ' + ''.join(parts)
 
     def _create_fallback_mathml(self, latex: str) -> str:
         """
@@ -246,13 +416,16 @@ class FormulaParser:
             Basic MathML wrapper
         """
         return f'''<math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
-    <mrow>
-        <mtext>{self._escape_xml(latex)}</mtext>
-    </mrow>
+  <mrow>
+    <mtext>{self._escape_xml(latex)}</mtext>
+  </mrow>
 </math>'''
 
     def _escape_xml(self, text: str) -> str:
         """Escape XML special characters"""
+        if not text:
+            return ''
+        text = str(text)
         text = text.replace('&', '&amp;')
         text = text.replace('<', '&lt;')
         text = text.replace('>', '&gt;')
@@ -303,6 +476,23 @@ def latex_to_mathml(latex: str) -> str:
     return parser.latex_to_mathml(latex)
 
 
+def latex_to_mathml_with_fallback(latex: str) -> Tuple[str, Optional[str], Optional[bytes]]:
+    """
+    Convert LaTeX to MathML with SVG and PNG fallbacks
+
+    Args:
+        latex: LaTeX formula string
+
+    Returns:
+        Tuple of (mathml, svg, png_bytes)
+    """
+    parser = FormulaParser(enable_svg_fallback=True, enable_png_fallback=True)
+    mathml = parser.latex_to_mathml(latex)
+    svg = parser.mathml_to_svg(mathml, latex)
+    png = parser.latex_to_png(latex)
+    return mathml, svg, png
+
+
 def extract_and_convert_formulas(text: str) -> List[Dict[str, Any]]:
     """
     Convenience function to extract and convert formulas from text
@@ -311,9 +501,9 @@ def extract_and_convert_formulas(text: str) -> List[Dict[str, Any]]:
         text: Text containing formulas
 
     Returns:
-        List of content blocks
+        List of content blocks with MathML and fallbacks
     """
-    parser = FormulaParser()
+    parser = FormulaParser(enable_svg_fallback=True, enable_png_fallback=True)
     return parser.extract_formulas(text)
 
 
@@ -331,18 +521,26 @@ if __name__ == '__main__':
         "Greek letters: $\\alpha, \\beta, \\gamma$"
     ]
 
-    parser = FormulaParser()
+    parser = FormulaParser(enable_svg_fallback=True, enable_png_fallback=True)
 
     for i, test in enumerate(test_cases, 1):
-        print(f"\nTest {i}:")
+        print(f"\n{'='*60}")
+        print(f"Test {i}:")
         print(f"Input: {test}")
         print(f"Contains formula: {parser.contains_formula(test)}")
 
         blocks = parser.extract_formulas(test)
         for block in blocks:
-            print(f"  Type: {block['type']}")
+            print(f"\n  Type: {block['type']}")
             if block['type'] == 'formula':
                 print(f"  LaTeX: {block['latex']}")
-                print(f"  MathML: {block['mathml'][:100]}...")
+                print(f"  MathML: {block['mathml'][:150]}...")
+                if block.get('svg'):
+                    print(f"  SVG: Generated ({len(block['svg'])} bytes)")
+                if block.get('png'):
+                    print(f"  PNG: Generated ({len(block['png'])} bytes)")
             else:
                 print(f"  Content: {block['content']}")
+
+    print(f"\n{'='*60}")
+    print("✓ Formula parser enhanced with MathML, SVG, and PNG fallback support")

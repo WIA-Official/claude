@@ -19,6 +19,9 @@ Werkzeug==3.0.1
 # Additional utilities
 python-dateutil==2.8.2
 
+# Enhanced formula rendering (optional for PNG fallback)
+matplotlib==3.8.2
+
 # Optional: For better LaTeX parsing
 # antlr4-python3-runtime==4.13.1
 

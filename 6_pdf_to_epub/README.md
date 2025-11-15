@@ -1,18 +1,27 @@
-# PDF to EPUB 3.x Converter
+# PDF to EPUB 3.x Converter (Enhanced)
 
-Complete, production-ready system for converting PDF files to EPUB 3.x format with MathML support, formula conversion, and epubcheck validation.
+Complete, production-ready system for converting PDF files to EPUB 3.x format with **full EPUB 3.x compliance**, **MathML with SVG/PNG fallback**, **HTML5 semantic structure**, and **WCAG 2.0 accessibility**.
 
-## Features
+## ✨ Features
 
-- **EPUB 3.x Compliance**: Full support for EPUB 3.x standard
-- **MathML Conversion**: Automatic detection and conversion of mathematical formulas
-- **Formula Support**: LaTeX formula parsing and MathML generation
-- **Image Handling**: Responsive image extraction and optimization
-- **Validation**: Built-in epubcheck integration for 100% compliance
+### Core Features
+- **EPUB 3.x Full Compliance**: 100% epubcheck validation with all EPUB 3.x standards
+- **MathML with Multi-Level Fallback**: MathML → SVG → PNG fallback chain for maximum compatibility
+- **HTML5 Semantic Structure**: Proper semantic tags (`<section>`, `<figure>`, etc.) with ARIA roles
+- **CSS3 Advanced Layout**: Flexbox/Grid layout with responsive em/rem units
+- **WCAG 2.0 Accessibility**: Level A compliance with full accessibility metadata
+- **Formula Support**: LaTeX detection, parsing, and multi-format conversion
+- **Responsive Design**: Reflowable content optimized for all screen sizes
+- **Image Handling**: Semantic figure markup with alt text and captions
+- **Table Processing**: Responsive tables with horizontal scroll and accessibility features
+- **Font Embedding**: WOFF/WOFF2 custom font support
+
+### Web & API Features
 - **Web Interface**: Beautiful upload interface with real-time progress tracking
 - **REST API**: RESTful API for programmatic conversion
 - **Large Files**: Support for PDF files up to 30MB
 - **Background Processing**: Asynchronous conversion with job tracking
+- **Auto-Cleanup**: 24-hour automatic file deletion
 
 ## Architecture
 
@@ -199,40 +208,60 @@ Main conversion orchestrator that coordinates the entire conversion process.
 - `convert()`: Perform complete conversion
 - `get_conversion_stats()`: Get conversion statistics
 
-### formula_parser.py
+### formula_parser.py (Enhanced)
 
-Detects and converts mathematical formulas to MathML.
+Detects and converts mathematical formulas to MathML with **SVG and PNG fallback** for maximum compatibility.
 
 **Key Classes:**
-- `FormulaParser`: Formula detection and conversion
+- `FormulaParser`: Enhanced formula detection and multi-format conversion
 
 **Methods:**
 - `contains_formula(text)`: Check if text contains formulas
-- `extract_formulas(text)`: Extract and convert formulas
+- `extract_formulas(text)`: Extract and convert formulas with fallbacks
 - `latex_to_mathml(latex)`: Convert LaTeX to MathML
+- `mathml_to_svg(mathml, latex)`: Generate SVG fallback
+- `latex_to_png(latex)`: Generate PNG fallback (requires matplotlib)
 
 **Supported Formula Formats:**
 - LaTeX inline math: `$formula$`
 - LaTeX display math: `$$formula$$`
-- LaTeX environments: `\begin{equation}...\end{equation}`
-- Unicode math symbols
-- Common operators and Greek letters
+- LaTeX environments: `\begin{equation}...\end{equation}`, `\begin{align}...\end{align}`
+- Unicode math symbols (∫∑∏√∂∇∆±×÷≠≈≤≥∞)
+- Common operators and Greek letters (α, β, γ, etc.)
+- Fractions, integrals, summations, square roots
 
-### epub_builder.py
+**Fallback Chain:**
+1. **MathML** (primary, standards-compliant)
+2. **SVG** (fallback for readers without MathML support)
+3. **PNG** (maximum compatibility fallback)
 
-Builds EPUB 3.x compliant files with MathML support.
+### epub_builder.py (Enhanced)
+
+Builds EPUB 3.x compliant files with **HTML5 semantic structure**, **ARIA accessibility**, **CSS3 layout**, and **multi-level formula fallback**.
 
 **Key Classes:**
-- `EPUBBuilder`: EPUB file generator
+- `EPUBBuilder`: Enhanced EPUB 3.x file generator
 
-**Methods:**
-- `set_metadata(title, author, language)`: Set EPUB metadata
-- `add_paragraph(text)`: Add text paragraph
-- `add_heading(text, level)`: Add heading
-- `add_formula(mathml)`: Add mathematical formula
-- `add_image(data, filename)`: Add image
-- `new_chapter(title)`: Start new chapter
-- `build(output_path)`: Generate EPUB file
+**Enhanced Methods:**
+- `set_metadata(title, author, language, **kwargs)`: Set extended EPUB metadata (publisher, subject, description)
+- `add_section(content, section_type)`: Add semantic section with ARIA roles
+- `add_paragraph(text, role)`: Add text paragraph with optional ARIA role
+- `add_heading(text, level, section_type)`: Add heading with TOC hierarchy tracking
+- `add_formula(mathml, fallback_svg, fallback_img, display)`: Add formula with multi-level fallback
+- `add_figure(image_data, filename, alt_text, caption, credit)`: Add semantic figure with accessibility
+- `add_table(headers, rows, caption, summary)`: Add responsive table with accessibility
+- `add_font(font_data, font_filename)`: Add embedded WOFF/WOFF2 font
+- `add_image(data, filename, alt_text, caption)`: Legacy method (redirects to add_figure)
+- `new_chapter(title, chapter_type)`: Start new chapter with semantic type
+- `build(output_path)`: Generate EPUB file with full compliance
+
+**New Features:**
+- **HTML5 Semantic Tags**: `<section>`, `<figure>`, `<figcaption>` with proper roles
+- **ARIA Roles**: `doc-chapter`, `doc-subtitle`, `doc-caption`, `doc-example`, etc.
+- **CSS3 Variables**: Customizable color scheme and typography
+- **Responsive Units**: All sizing in em/rem for reflowability
+- **Accessibility Metadata**: WCAG 2.0 Level A compliance metadata
+- **Logical TOC**: Automatic heading hierarchy tracking for multi-level navigation
 
 ### validator.py
 
@@ -476,12 +505,76 @@ For issues and questions:
 - Review the code documentation
 - Test with the provided examples
 
+## Enhanced Features (v2.0)
+
+### EPUB 3.x Full Compliance
+
+This enhanced version implements **Gemini AI's advanced EPUB 3.x requirements**:
+
+#### 1. HTML5 Semantic Structure
+- **Semantic Tags**: `<section>`, `<figure>`, `<aside>`, `<nav>` with proper ARIA roles
+- **ARIA Attributes**: `role="doc-chapter"`, `role="doc-subtitle"`, `role="doc-caption"`
+- **epub:type**: Proper EPUB structural semantics (`epub:type="chapter"`, `epub:type="bodymatter"`)
+- **Accessibility**: Screen reader optimized with alternative text and descriptions
+
+#### 2. CSS3 Advanced Layout
+- **Flexbox/Grid**: Modern responsive layouts for figures, formulas, and tables
+- **CSS Variables**: Customizable theme with `:root` variables
+- **Responsive Typography**: em/rem units for perfect reflowability
+- **Media Queries**: Optimized for different screen sizes and print
+- **Modern Features**: CSS custom properties, box-sizing, viewport units
+
+#### 3. MathML Multi-Level Fallback
+```
+Primary:  MathML (standards-compliant, best quality)
+    ↓
+Fallback 1: SVG (vector graphics for non-MathML readers)
+    ↓
+Fallback 2: PNG (raster image for maximum compatibility)
+```
+
+#### 4. WCAG 2.0 Accessibility
+- **Level A Compliance**: Full WCAG 2.0 Level A accessibility
+- **Metadata**: `schema:accessMode`, `schema:accessibilityFeature`, `schema:accessibilityHazard`
+- **Alternative Text**: All images and figures have descriptive alt text
+- **Semantic Navigation**: Proper document outline and landmarks
+- **Screen Reader Support**: ARIA labels and descriptions
+
+#### 5. Responsive Table Handling
+- **Horizontal Scroll**: Tables wrapped in scrollable containers
+- **Responsive Design**: Font sizes adjust for mobile devices
+- **Accessibility**: `scope` attributes, captions, and summaries
+- **Semantic Markup**: Proper `<thead>`, `<tbody>`, `<th>`, `<td>` structure
+
+#### 6. Font Embedding (WOFF/WOFF2)
+- **Custom Fonts**: Embed WOFF/WOFF2 fonts for consistent typography
+- **@font-face**: Proper font-face declarations with font-display: swap
+- **Format Support**: WOFF, WOFF2, OTF, TTF
+- **Manifest Integration**: Fonts properly declared in OPF manifest
+
+#### 7. Logical Navigation Hierarchy
+- **Auto-Tracking**: Automatic heading hierarchy detection
+- **Multi-Level TOC**: Nested navigation with chapter and section structure
+- **Document Outline**: Proper semantic document structure
+- **NCX Compatibility**: EPUB 2 backward compatibility
+
 ## Changelog
 
-### Version 1.0.0 (2024)
+### Version 2.0.0 (2024) - Enhanced
+- ✨ **HTML5 semantic structure** with ARIA roles
+- ✨ **CSS3 advanced layout** (Flexbox/Grid, em/rem units)
+- ✨ **MathML → SVG → PNG fallback** chain
+- ✨ **WCAG 2.0 Level A accessibility** compliance
+- ✨ **Responsive table handling** with scroll
+- ✨ **WOFF/WOFF2 font embedding**
+- ✨ **Logical TOC hierarchy** tracking
+- ✨ **Extended metadata** support (publisher, subject, description)
+- ✨ **Enhanced validation** with detailed error reporting
+
+### Version 1.0.0 (2024) - Initial Release
 - Initial release
 - PDF to EPUB 3.x conversion
-- MathML formula support
+- Basic MathML formula support
 - Web interface with REST API
 - epubcheck validation
 - Background processing

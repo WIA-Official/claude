@@ -220,16 +220,24 @@ class PDFToEPUBConverter:
                 language='en'
             )
 
-            # Add content blocks to EPUB
+            # Add content blocks to EPUB with enhanced API
             for block in self.content:
                 if block['type'] == 'paragraph':
                     self.epub_builder.add_paragraph(block['content'])
                 elif block['type'] == 'formula':
-                    self.epub_builder.add_formula(block['mathml'])
+                    # Use enhanced add_formula with fallbacks
+                    self.epub_builder.add_formula(
+                        block['mathml'],
+                        fallback_svg=block.get('svg'),
+                        fallback_img=block.get('png'),
+                        display=block.get('display', True)
+                    )
                 elif block['type'] == 'image':
-                    self.epub_builder.add_image(
+                    # Use enhanced add_figure
+                    self.epub_builder.add_figure(
                         block['data'],
-                        block['name']
+                        block['name'],
+                        alt_text=f"Image from page {block.get('page', 'unknown')}"
                     )
 
             # Generate EPUB file
