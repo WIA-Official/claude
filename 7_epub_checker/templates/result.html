@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="{{ 'ko' if language == 'ko' else 'en' }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if language == 'ko' %}검증 결과{% else %}Validation Result{% endif %} - EPUB Checker</title>
+
+    <!-- Material Design Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <h1 class="logo">
+                    <a href="{{ url_for('index') }}">
+                        <span class="material-icons">library_books</span>
+                        {% if language == 'ko' %}EPUB 검증기{% else %}EPUB Checker{% endif %}
+                    </a>
+                </h1>
+                <div class="language-switcher">
+                    <a href="{{ url_for('set_language', lang='ko') }}" class="lang-btn {% if language == 'ko' %}active{% endif %}">한국어</a>
+                    <a href="{{ url_for('set_language', lang='en') }}" class="lang-btn {% if language == 'en' %}active{% endif %}">English</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Result Section -->
+    <section class="result-section">
+        <div class="container">
+            <!-- Status Banner -->
+            <div class="status-banner {% if report.is_valid %}success{% else %}error{% endif %}">
+                <span class="material-icons status-icon">
+                    {% if report.is_valid %}check_circle{% else %}error{% endif %}
+                </span>
+                <div class="status-content">
+                    <h2 class="status-title">
+                        {% if report.is_valid %}
+                            {% if language == 'ko' %}✓ 검증 통과!{% else %}✓ Validation Passed!{% endif %}
+                        {% else %}
+                            {% if language == 'ko' %}⚠ 검증 실패{% else %}⚠ Validation Failed{% endif %}
+                        {% endif %}
+                    </h2>
+                    <p class="status-subtitle">
+                        {{ report.file_info.filename }}
+                    </p>
+                </div>
+            </div>
+
+            <!-- File Info Card -->
+            <div class="info-card card">
+                <h3 class="card-title">
+                    <span class="material-icons">info</span>
+                    {% if language == 'ko' %}파일 정보{% else %}File Information{% endif %}
+                </h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">
+                            {% if language == 'ko' %}제목{% else %}Title{% endif %}
+                        </span>
+                        <span class="info-value">{{ report.file_info.title }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">
+                            {% if language == 'ko' %}저자{% else %}Author{% endif %}
+                        </span>
+                        <span class="info-value">{{ report.file_info.creator }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">
+                            {% if language == 'ko' %}파일 크기{% else %}File Size{% endif %}
+                        </span>
+                        <span class="info-value">{{ report.file_info.size_mb }} MB</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">
+                            {% if language == 'ko' %}총 파일 수{% else %}Total Files{% endif %}
+                        </span>
+                        <span class="info-value">{{ report.file_info.num_files }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">
+                            {% if language == 'ko' %}이미지 포함{% else %}Has Images{% endif %}
+                        </span>
+                        <span class="info-value">
+                            {% if report.file_info.has_images %}
+                                {% if language == 'ko' %}예{% else %}Yes{% endif %}
+                            {% else %}
+                                {% if language == 'ko' %}아니오{% else %}No{% endif %}
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">
+                            {% if language == 'ko' %}폰트 포함{% else %}Has Fonts{% endif %}
+                        </span>
+                        <span class="info-value">
+                            {% if report.file_info.has_fonts %}
+                                {% if language == 'ko' %}예{% else %}Yes{% endif %}
+                            {% else %}
+                                {% if language == 'ko' %}아니오{% else %}No{% endif %}
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary Card -->
+            <div class="summary-card card">
+                <h3 class="card-title">
+                    <span class="material-icons">assessment</span>
+                    {% if language == 'ko' %}검증 요약{% else %}Validation Summary{% endif %}
+                </h3>
+                <div class="summary-grid">
+                    <div class="summary-item error-count">
+                        <span class="summary-number">{{ report.summary.total_errors }}</span>
+                        <span class="summary-label">
+                            {% if language == 'ko' %}오류{% else %}Errors{% endif %}
+                        </span>
+                    </div>
+                    <div class="summary-item warning-count">
+                        <span class="summary-number">{{ report.summary.total_warnings }}</span>
+                        <span class="summary-label">
+                            {% if language == 'ko' %}경고{% else %}Warnings{% endif %}
+                        </span>
+                    </div>
+                    <div class="summary-item fixable-count">
+                        <span class="summary-number">{{ report.summary.fixable_errors }}</span>
+                        <span class="summary-label">
+                            {% if language == 'ko' %}자동 수정 가능{% else %}Auto-Fixable{% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Errors -->
+            {% if report.errors %}
+            <div class="errors-card card">
+                <h3 class="card-title">
+                    <span class="material-icons">error_outline</span>
+                    {% if language == 'ko' %}오류 목록 ({{ report.summary.total_errors }}){% else %}Errors ({{ report.summary.total_errors }}){% endif %}
+                </h3>
+                <div class="errors-list">
+                    {% for error in report.errors %}
+                    <div class="error-item">
+                        <div class="error-header">
+                            <span class="error-code {% if error.fixable %}fixable{% endif %}">
+                                {{ error.code }}
+                                {% if error.fixable %}
+                                    <span class="fixable-badge">
+                                        {% if language == 'ko' %}자동 수정 가능{% else %}Auto-Fixable{% endif %}
+                                    </span>
+                                {% endif %}
+                            </span>
+                            <span class="error-severity">{{ guide.get_severity_label(error.severity) }}</span>
+                        </div>
+                        <p class="error-message">{{ error.message }}</p>
+                        {% if error.location %}
+                        <p class="error-location">
+                            <span class="material-icons location-icon">location_on</span>
+                            {{ error.location }}
+                            {% if error.line %}
+                                : {% if language == 'ko' %}줄{% else %}Line{% endif %} {{ error.line }}
+                                {% if error.column %}, {% if language == 'ko' %}열{% else %}Col{% endif %} {{ error.column }}{% endif %}
+                            {% endif %}
+                        </p>
+                        {% endif %}
+
+                        <!-- Error Guide -->
+                        {% set error_info = guide.get_error_info(error.code) %}
+                        {% if error_info %}
+                        <details class="error-guide">
+                            <summary class="guide-summary">
+                                <span class="material-icons">help_outline</span>
+                                {% if language == 'ko' %}수정 방법 보기{% else %}View Fix Guide{% endif %}
+                            </summary>
+                            <div class="guide-content">
+                                <h5>{{ error_info.title }}</h5>
+                                <p class="guide-description">{{ error_info.description }}</p>
+
+                                <h6>
+                                    {% if language == 'ko' %}영향{% else %}Impact{% endif %}
+                                </h6>
+                                <p>{{ error_info.impact }}</p>
+
+                                <h6>
+                                    {% if language == 'ko' %}수정 방법{% else %}How to Fix{% endif %}
+                                </h6>
+                                <ol class="fix-steps">
+                                    {% for fix in error_info.fix %}
+                                    <li>{{ fix }}</li>
+                                    {% endfor %}
+                                </ol>
+
+                                {% if error_info.example %}
+                                <h6>
+                                    {% if language == 'ko' %}예시{% else %}Example{% endif %}
+                                </h6>
+                                <pre class="code-example">{{ error_info.example }}</pre>
+                                {% endif %}
+                            </div>
+                        </details>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Warnings -->
+            {% if report.warnings %}
+            <div class="warnings-card card">
+                <h3 class="card-title">
+                    <span class="material-icons">warning</span>
+                    {% if language == 'ko' %}경고 목록 ({{ report.summary.total_warnings }}){% else %}Warnings ({{ report.summary.total_warnings }}){% endif %}
+                </h3>
+                <div class="warnings-list">
+                    {% for warning in report.warnings[:10] %}
+                    <div class="warning-item">
+                        <span class="warning-code">{{ warning.code }}</span>
+                        <p class="warning-message">{{ warning.message }}</p>
+                        {% if warning.location %}
+                        <p class="warning-location">
+                            <span class="material-icons location-icon">location_on</span>
+                            {{ warning.location }}
+                        </p>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                    {% if report.summary.total_warnings > 10 %}
+                    <p class="more-items">
+                        {% if language == 'ko' %}... 외 {{ report.summary.total_warnings - 10 }}개{% else %}... and {{ report.summary.total_warnings - 10 }} more{% endif %}
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Actions -->
+            <div class="actions-card card">
+                <h3 class="card-title">
+                    <span class="material-icons">help</span>
+                    {% if language == 'ko' %}다음 단계{% else %}Next Steps{% endif %}
+                </h3>
+                <div class="actions-grid">
+                    {% if report.summary.fixable_errors > 0 %}
+                    <div class="action-item">
+                        <span class="material-icons action-icon">build_circle</span>
+                        <h4>
+                            {% if language == 'ko' %}자동 수정 가능{% else %}Auto-Fix Available{% endif %}
+                        </h4>
+                        <p>
+                            {% if language == 'ko' %}
+                            {{ report.summary.fixable_errors }}개의 오류를 자동으로 수정할 수 있습니다.<br>
+                            PDF to EPUB 변환기를 사용하여 자동 수정을 받으세요.
+                            {% else %}
+                            {{ report.summary.fixable_errors }} errors can be automatically fixed.<br>
+                            Use our PDF to EPUB converter to get auto-fix.
+                            {% endif %}
+                        </p>
+                        <a href="/pdf-to-epub" class="btn btn-primary">
+                            <span class="material-icons">auto_fix_high</span>
+                            {% if language == 'ko' %}자동 수정하기{% else %}Auto-Fix Now{% endif %}
+                        </a>
+                    </div>
+                    {% endif %}
+
+                    <div class="action-item">
+                        <span class="material-icons action-icon">upload_file</span>
+                        <h4>
+                            {% if language == 'ko' %}다른 파일 검증{% else %}Validate Another File{% endif %}
+                        </h4>
+                        <p>
+                            {% if language == 'ko' %}
+                            추가 EPUB 파일을 업로드하여 검증하세요.
+                            {% else %}
+                            Upload another EPUB file for validation.
+                            {% endif %}
+                        </p>
+                        <a href="{{ url_for('index') }}" class="btn btn-secondary">
+                            <span class="material-icons">cloud_upload</span>
+                            {% if language == 'ko' %}새 파일 업로드{% else %}Upload New File{% endif %}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 WIA Books. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

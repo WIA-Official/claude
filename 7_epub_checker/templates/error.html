@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="{{ 'ko' if language == 'ko' else 'en' }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if language == 'ko' %}오류{% else %}Error{% endif %} - EPUB Checker</title>
+
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <h1 class="logo">
+                <a href="{{ url_for('index') }}">
+                    <span class="material-icons">library_books</span>
+                    {% if language == 'ko' %}EPUB 검증기{% else %}EPUB Checker{% endif %}
+                </a>
+            </h1>
+        </div>
+    </header>
+
+    <section class="error-page">
+        <div class="container">
+            <div class="error-content card">
+                <span class="material-icons error-icon-large">error_outline</span>
+                <h2>{% if language == 'ko' %}오류 발생{% else %}Error Occurred{% endif %}</h2>
+                <p class="error-text">{{ error }}</p>
+                <a href="{{ url_for('index') }}" class="btn btn-primary">
+                    <span class="material-icons">home</span>
+                    {% if language == 'ko' %}홈으로 돌아가기{% else %}Back to Home{% endif %}
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 WIA Books. All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>

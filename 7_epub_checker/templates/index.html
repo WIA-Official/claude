@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="{{ 'ko' if language == 'ko' else 'en' }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if language == 'ko' %}EPUB 검증기{% else %}EPUB Checker{% endif %} - WIA Books</title>
+
+    <!-- Material Design Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <h1 class="logo">
+                    <span class="material-icons">library_books</span>
+                    {% if language == 'ko' %}EPUB 검증기{% else %}EPUB Checker{% endif %}
+                </h1>
+                <div class="language-switcher">
+                    <a href="{{ url_for('set_language', lang='ko') }}" class="lang-btn {% if language == 'ko' %}active{% endif %}">한국어</a>
+                    <a href="{{ url_for('set_language', lang='en') }}" class="lang-btn {% if language == 'en' %}active{% endif %}">English</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <span class="material-icons hero-icon">verified</span>
+                <h2 class="hero-title">
+                    {% if language == 'ko' %}
+                    EPUB 파일을 검증하세요
+                    {% else %}
+                    Validate Your EPUB Files
+                    {% endif %}
+                </h2>
+                <p class="hero-subtitle">
+                    {% if language == 'ko' %}
+                    epubcheck를 사용한 전문적인 EPUB 3.x 검증 서비스<br>
+                    상세한 오류 분석과 수정 가이드를 제공합니다
+                    {% else %}
+                    Professional EPUB 3.x validation using epubcheck<br>
+                    Detailed error analysis and fix recommendations
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Upload Section -->
+    <section class="upload-section">
+        <div class="container">
+            <div class="upload-card card">
+                <div class="card-header">
+                    <span class="material-icons">cloud_upload</span>
+                    <h3>
+                        {% if language == 'ko' %}
+                        EPUB 파일 업로드
+                        {% else %}
+                        Upload EPUB File
+                        {% endif %}
+                    </h3>
+                </div>
+
+                <div class="card-body">
+                    <form id="upload-form" action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data">
+                        <div class="file-input-wrapper" id="drop-zone">
+                            <input type="file" name="file" id="file-input" accept=".epub" required>
+                            <label for="file-input" class="file-label">
+                                <span class="material-icons file-icon">description</span>
+                                <span class="file-text">
+                                    {% if language == 'ko' %}
+                                    파일을 선택하거나 여기에 드래그하세요
+                                    {% else %}
+                                    Choose a file or drag it here
+                                    {% endif %}
+                                </span>
+                                <span class="file-name"></span>
+                                <span class="file-info">
+                                    {% if language == 'ko' %}
+                                    최대 파일 크기: 30MB | 지원 형식: .epub
+                                    {% else %}
+                                    Max size: 30MB | Supported: .epub
+                                    {% endif %}
+                                </span>
+                            </label>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-large" id="submit-btn">
+                            <span class="material-icons">check_circle</span>
+                            {% if language == 'ko' %}검증 시작{% else %}Start Validation{% endif %}
+                        </button>
+                    </form>
+
+                    <!-- Progress Indicator -->
+                    <div id="progress-container" class="progress-container" style="display: none;">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progress-fill"></div>
+                        </div>
+                        <p class="progress-text" id="progress-text">
+                            {% if language == 'ko' %}검증 중...{% else %}Validating...{% endif %}
+                        </p>
+                    </div>
+
+                    <!-- Error Message -->
+                    <div id="error-message" class="error-message" style="display: none;"></div>
+                </div>
+            </div>
+
+            <!-- Features -->
+            <div class="features">
+                <div class="feature-card card">
+                    <span class="material-icons feature-icon">speed</span>
+                    <h4>
+                        {% if language == 'ko' %}빠른 검증{% else %}Fast Validation{% endif %}
+                    </h4>
+                    <p>
+                        {% if language == 'ko' %}
+                        epubcheck 기반의 신속하고 정확한 검증
+                        {% else %}
+                        Quick and accurate epubcheck-based validation
+                        {% endif %}
+                    </p>
+                </div>
+
+                <div class="feature-card card">
+                    <span class="material-icons feature-icon">info</span>
+                    <h4>
+                        {% if language == 'ko' %}상세 분석{% else %}Detailed Analysis{% endif %}
+                    </h4>
+                    <p>
+                        {% if language == 'ko' %}
+                        오류별 상세 설명과 위치 정보 제공
+                        {% else %}
+                        Detailed error descriptions and locations
+                        {% endif %}
+                    </p>
+                </div>
+
+                <div class="feature-card card">
+                    <span class="material-icons feature-icon">build</span>
+                    <h4>
+                        {% if language == 'ko' %}수정 가이드{% else %}Fix Guide{% endif %}
+                    </h4>
+                    <p>
+                        {% if language == 'ko' %}
+                        각 오류에 대한 구체적인 해결 방법 안내
+                        {% else %}
+                        Specific solutions for each error type
+                        {% endif %}
+                    </p>
+                </div>
+
+                <div class="feature-card card">
+                    <span class="material-icons feature-icon">language</span>
+                    <h4>
+                        {% if language == 'ko' %}이중 언어{% else %}Bilingual{% endif %}
+                    </h4>
+                    <p>
+                        {% if language == 'ko' %}
+                        한국어와 영어로 제공되는 검증 결과
+                        {% else %}
+                        Validation results in Korean and English
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+
+            <!-- CTA to PDF Converter -->
+            <div class="cta-card card">
+                <div class="cta-content">
+                    <span class="material-icons cta-icon">transform</span>
+                    <div class="cta-text">
+                        <h3>
+                            {% if language == 'ko' %}
+                            PDF를 EPUB로 변환하고 싶으신가요?
+                            {% else %}
+                            Want to convert PDF to EPUB?
+                            {% endif %}
+                        </h3>
+                        <p>
+                            {% if language == 'ko' %}
+                            자동 검증 및 오류 수정 기능이 포함된 PDF to EPUB 변환기를 사용해보세요
+                            {% else %}
+                            Try our PDF to EPUB converter with auto-validation and error fixing
+                            {% endif %}
+                        </p>
+                    </div>
+                    <a href="/pdf-to-epub" class="btn btn-secondary">
+                        <span class="material-icons">arrow_forward</span>
+                        {% if language == 'ko' %}변환하러 가기{% else %}Go to Converter{% endif %}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 WIA Books. All rights reserved.</p>
+            <p class="footer-links">
+                <a href="/api/errors?lang={{ language }}">
+                    {% if language == 'ko' %}오류 코드 목록{% else %}Error Codes{% endif %}
+                </a>
+                |
+                <a href="/health">
+                    {% if language == 'ko' %}서비스 상태{% else %}Service Status{% endif %}
+                </a>
+            </p>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
