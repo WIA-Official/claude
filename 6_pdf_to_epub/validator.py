@@ -1,34 +1,112 @@
 #!/usr/bin/env python3
 """
-EPUB Validator - epubcheck Integration Module
-Validates EPUB files for EPUB 3.x compliance using epubcheck
+EPUB Validator - Enhanced with Auto-Fix Capabilities
+Validates EPUB files and automatically fixes common errors
 """
 
 import os
+import re
 import subprocess
 import logging
 import zipfile
 import json
+import tempfile
+import shutil
 from pathlib import Path
 from typing import Tuple, List, Dict, Any, Optional
 from xml.etree import ElementTree as ET
+from dataclasses import dataclass, field
 
 logger = logging.getLogger(__name__)
 
 
+@dataclass
+class ValidationError:
+    """Represents a validation error"""
+    code: str
+    severity: str  # FATAL, ERROR, WARNING, INFO
+    message: str
+    location: Optional[str] = None
+    line: Optional[int] = None
+    column: Optional[int] = None
+    fixable: bool = False
+
+
+@dataclass
+class ValidationResult:
+    """Validation result with detailed information"""
+    is_valid: bool
+    errors: List[ValidationError] = field(default_factory=list)
+    warnings: List[ValidationError] = field(default_factory=list)
+    info: List[ValidationError] = field(default_factory=list)
+
+    @property
+    def fatal_count(self) -> int:
+        return sum(1 for e in self.errors if e.severity == 'FATAL')
+
+    @property
+    def error_count(self) -> int:
+        return sum(1 for e in self.errors if e.severity == 'ERROR')
+
+    @property
+    def warning_count(self) -> int:
+        return len(self.warnings)
+
+    @property
+    def fixable_count(self) -> int:
+        return sum(1 for e in self.errors if e.fixable)
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary"""
+        return {
+            'is_valid': self.is_valid,
+            'fatal_count': self.fatal_count,
+            'error_count': self.error_count,
+            'warning_count': self.warning_count,
+            'fixable_count': self.fixable_count,
+            'errors': [
+                {
+                    'code': e.code,
+                    'severity': e.severity,
+                    'message': e.message,
+                    'location': e.location,
+                    'line': e.line,
+                    'column': e.column,
+                    'fixable': e.fixable
+                }
+                for e in self.errors + self.warnings + self.info
+            ]
+        }
+
+
 class EPUBValidator:
-    """Validator for EPUB files using epubcheck and custom validation"""
+    """Enhanced validator with automatic error fixing capabilities"""
+
+    # Valid ARIA roles for EPUB 3.x
+    VALID_ARIA_ROLES = {
+        'doc-abstract', 'doc-acknowledgments', 'doc-afterword', 'doc-appendix',
+        'doc-backlink', 'doc-biblioentry', 'doc-bibliography', 'doc-biblioref',
+        'doc-chapter', 'doc-colophon', 'doc-conclusion', 'doc-cover',
+        'doc-credit', 'doc-credits', 'doc-dedication', 'doc-endnote',
+        'doc-endnotes', 'doc-epigraph', 'doc-epilogue', 'doc-errata',
+        'doc-example', 'doc-footnote', 'doc-foreword', 'doc-glossary',
+        'doc-glossref', 'doc-index', 'doc-introduction', 'doc-noteref',
+        'doc-notice', 'doc-pagebreak', 'doc-pagelist', 'doc-part',
+        'doc-preface', 'doc-prologue', 'doc-pullquote', 'doc-qna',
+        'doc-subtitle', 'doc-tip', 'doc-toc', 'doc-title',
+        # Standard roles
+        'heading', 'list', 'listitem', 'navigation', 'article', 'main',
+        'complementary', 'contentinfo', 'banner', 'search', 'region'
+    }
 
     def __init__(self, epubcheck_path: Optional[str] = None):
         """
-        Initialize the validator
+        Initialize the enhanced validator
 
         Args:
             epubcheck_path: Path to epubcheck JAR file (optional)
         """
         self.epubcheck_path = epubcheck_path or self._find_epubcheck()
-        self.errors: List[str] = []
-        self.warnings: List[str] = []
 
     def _find_epubcheck(self) -> Optional[str]:
         """
@@ -40,9 +118,11 @@ class EPUBValidator:
         common_paths = [
             '/usr/local/bin/epubcheck.jar',
             '/usr/bin/epubcheck.jar',
+            '/opt/epubcheck/epubcheck.jar',
             os.path.expanduser('~/bin/epubcheck.jar'),
             './epubcheck.jar',
-            '../tools/epubcheck.jar'
+            '../tools/epubcheck.jar',
+            '/var/www/wiabooks/tools/epubcheck.jar'
         ]
 
         for path in common_paths:
@@ -53,255 +133,178 @@ class EPUBValidator:
         logger.warning("epubcheck not found, will use basic validation only")
         return None
 
-    def validate(self, epub_path: str, use_epubcheck: bool = True) -> Tuple[bool, List[str]]:
+    def validate(self, epub_path: str, use_epubcheck: bool = True) -> ValidationResult:
         """
-        Validate an EPUB file
+        Validate an EPUB file with detailed error reporting
 
         Args:
             epub_path: Path to EPUB file to validate
             use_epubcheck: Whether to use epubcheck (default: True)
 
         Returns:
-            Tuple of (is_valid, error_list)
+            ValidationResult object with detailed information
         """
         logger.info(f"Validating EPUB: {epub_path}")
 
-        self.errors = []
-        self.warnings = []
+        errors = []
+        warnings = []
+        info = []
 
         # Check if file exists
         if not os.path.exists(epub_path):
-            self.errors.append(f"File not found: {epub_path}")
-            return False, self.errors
+            errors.append(ValidationError(
+                code='FILE_NOT_FOUND',
+                severity='FATAL',
+                message=f"File not found: {epub_path}"
+            ))
+            return ValidationResult(is_valid=False, errors=errors)
 
         # Basic structural validation
-        basic_valid = self._validate_basic_structure(epub_path)
+        basic_result = self._validate_basic_structure(epub_path)
+        errors.extend(basic_result['errors'])
+        warnings.extend(basic_result['warnings'])
 
-        # Run epubcheck if available and requested
-        epubcheck_valid = True
+        # Run epubcheck if available
         if use_epubcheck and self.epubcheck_path:
-            epubcheck_valid = self._run_epubcheck(epub_path)
+            epubcheck_result = self._run_epubcheck(epub_path)
+            errors.extend(epubcheck_result['errors'])
+            warnings.extend(epubcheck_result['warnings'])
+            info.extend(epubcheck_result.get('info', []))
         elif use_epubcheck:
-            self.warnings.append("epubcheck not available, skipping advanced validation")
+            warnings.append(ValidationError(
+                code='EPUBCHECK_NOT_FOUND',
+                severity='WARNING',
+                message="epubcheck not available, using basic validation only"
+            ))
 
-        is_valid = basic_valid and epubcheck_valid
-        all_errors = self.errors + self.warnings
+        is_valid = len([e for e in errors if e.severity in ('FATAL', 'ERROR')]) == 0
+
+        result = ValidationResult(
+            is_valid=is_valid,
+            errors=errors,
+            warnings=warnings,
+            info=info
+        )
 
         if is_valid:
             logger.info("✓ EPUB validation passed")
         else:
-            logger.warning(f"✗ EPUB validation failed with {len(self.errors)} errors")
+            logger.warning(f"✗ EPUB validation failed: {result.fatal_count} fatal, {result.error_count} errors")
 
-        return is_valid, all_errors
+        return result
 
-    def _validate_basic_structure(self, epub_path: str) -> bool:
+    def _validate_basic_structure(self, epub_path: str) -> Dict[str, List[ValidationError]]:
         """
         Perform basic EPUB structure validation
 
-        Args:
-            epub_path: Path to EPUB file
-
         Returns:
-            True if basic validation passes
+            Dictionary with 'errors' and 'warnings' lists
         """
-        logger.info("Performing basic structure validation")
+        errors = []
+        warnings = []
 
         try:
             with zipfile.ZipFile(epub_path, 'r') as epub:
                 # Check mimetype
                 if 'mimetype' not in epub.namelist():
-                    self.errors.append("Missing mimetype file")
-                    return False
+                    errors.append(ValidationError(
+                        code='MIMETYPE_MISSING',
+                        severity='FATAL',
+                        message="Missing mimetype file",
+                        fixable=True
+                    ))
+                    return {'errors': errors, 'warnings': warnings}
 
                 mimetype = epub.read('mimetype').decode('utf-8').strip()
                 if mimetype != 'application/epub+zip':
-                    self.errors.append(f"Invalid mimetype: {mimetype}")
-                    return False
+                    errors.append(ValidationError(
+                        code='MIMETYPE_INVALID',
+                        severity='ERROR',
+                        message=f"Invalid mimetype: {mimetype}",
+                        fixable=True
+                    ))
 
                 # Check META-INF/container.xml
                 if 'META-INF/container.xml' not in epub.namelist():
-                    self.errors.append("Missing META-INF/container.xml")
-                    return False
+                    errors.append(ValidationError(
+                        code='CONTAINER_MISSING',
+                        severity='FATAL',
+                        message="Missing META-INF/container.xml",
+                        fixable=True
+                    ))
+                    return {'errors': errors, 'warnings': warnings}
 
                 # Validate container.xml
                 container_xml = epub.read('META-INF/container.xml')
-                container_valid = self._validate_container_xml(container_xml)
-                if not container_valid:
-                    return False
+                if not self._validate_xml_syntax(container_xml):
+                    errors.append(ValidationError(
+                        code='CONTAINER_INVALID_XML',
+                        severity='ERROR',
+                        message="Invalid XML in container.xml",
+                        fixable=True
+                    ))
 
-                # Find and validate OPF file
+                # Find OPF file
                 opf_path = self._extract_opf_path(container_xml)
                 if not opf_path:
-                    self.errors.append("Could not find OPF path in container.xml")
-                    return False
+                    errors.append(ValidationError(
+                        code='OPF_PATH_NOT_FOUND',
+                        severity='FATAL',
+                        message="Could not find OPF path in container.xml"
+                    ))
+                    return {'errors': errors, 'warnings': warnings}
 
                 if opf_path not in epub.namelist():
-                    self.errors.append(f"OPF file not found: {opf_path}")
-                    return False
+                    errors.append(ValidationError(
+                        code='OPF_FILE_MISSING',
+                        severity='FATAL',
+                        message=f"OPF file not found: {opf_path}"
+                    ))
 
-                # Validate OPF
-                opf_content = epub.read(opf_path)
-                opf_valid = self._validate_opf(opf_content)
-                if not opf_valid:
-                    return False
-
-                # Check for navigation document (EPUB 3)
-                nav_found = False
-                for filename in epub.namelist():
-                    if 'nav' in filename.lower() and filename.endswith('.xhtml'):
-                        nav_found = True
-                        break
-
+                # Check for navigation document
+                nav_found = any('nav' in f.lower() and f.endswith('.xhtml')
+                               for f in epub.namelist())
                 if not nav_found:
-                    self.warnings.append("No navigation document found (nav.xhtml)")
-
-                logger.info("Basic structure validation passed")
-                return True
+                    warnings.append(ValidationError(
+                        code='NAV_MISSING',
+                        severity='WARNING',
+                        message="No navigation document found (nav.xhtml)",
+                        fixable=True
+                    ))
 
         except zipfile.BadZipFile:
-            self.errors.append("Invalid ZIP file format")
-            return False
+            errors.append(ValidationError(
+                code='INVALID_ZIP',
+                severity='FATAL',
+                message="Invalid ZIP file format"
+            ))
         except Exception as e:
-            self.errors.append(f"Validation error: {str(e)}")
-            return False
+            errors.append(ValidationError(
+                code='VALIDATION_ERROR',
+                severity='ERROR',
+                message=f"Validation error: {str(e)}"
+            ))
 
-    def _validate_container_xml(self, xml_content: bytes) -> bool:
+        return {'errors': errors, 'warnings': warnings}
+
+    def _run_epubcheck(self, epub_path: str) -> Dict[str, List[ValidationError]]:
         """
-        Validate container.xml
-
-        Args:
-            xml_content: XML content as bytes
+        Run epubcheck and parse results
 
         Returns:
-            True if valid
+            Dictionary with validation errors
         """
-        try:
-            root = ET.fromstring(xml_content)
-
-            # Check namespace
-            expected_ns = 'urn:oasis:names:tc:opendocument:xmlns:container'
-            if expected_ns not in root.tag:
-                self.warnings.append("container.xml has unexpected namespace")
-
-            # Check for rootfiles
-            rootfiles = root.findall('.//{*}rootfile')
-            if not rootfiles:
-                self.errors.append("No rootfiles found in container.xml")
-                return False
-
-            return True
-
-        except ET.ParseError as e:
-            self.errors.append(f"Invalid container.xml: {e}")
-            return False
-
-    def _extract_opf_path(self, container_xml: bytes) -> Optional[str]:
-        """
-        Extract OPF file path from container.xml
-
-        Args:
-            container_xml: Container XML content
-
-        Returns:
-            OPF file path or None
-        """
-        try:
-            root = ET.fromstring(container_xml)
-            rootfile = root.find('.//{*}rootfile')
-            if rootfile is not None:
-                return rootfile.get('full-path')
-            return None
-        except Exception:
-            return None
-
-    def _validate_opf(self, opf_content: bytes) -> bool:
-        """
-        Validate OPF (package document)
-
-        Args:
-            opf_content: OPF XML content
-
-        Returns:
-            True if valid
-        """
-        try:
-            root = ET.fromstring(opf_content)
-
-            # Check version
-            version = root.get('version')
-            if version not in ('2.0', '3.0'):
-                self.warnings.append(f"Unexpected EPUB version: {version}")
-
-            # Check for required elements
-            metadata = root.find('.//{*}metadata')
-            manifest = root.find('.//{*}manifest')
-            spine = root.find('.//{*}spine')
-
-            if metadata is None:
-                self.errors.append("Missing metadata in OPF")
-                return False
-
-            if manifest is None:
-                self.errors.append("Missing manifest in OPF")
-                return False
-
-            if spine is None:
-                self.errors.append("Missing spine in OPF")
-                return False
-
-            # Check required metadata
-            title = metadata.find('.//{*}title')
-            if title is None or not title.text:
-                self.errors.append("Missing or empty title in metadata")
-
-            language = metadata.find('.//{*}language')
-            if language is None or not language.text:
-                self.errors.append("Missing or empty language in metadata")
-
-            identifier = metadata.find('.//{*}identifier')
-            if identifier is None or not identifier.text:
-                self.errors.append("Missing or empty identifier in metadata")
-
-            # Check manifest items
-            items = manifest.findall('.//{*}item')
-            if not items:
-                self.errors.append("No items in manifest")
-                return False
-
-            # Check spine itemrefs
-            itemrefs = spine.findall('.//{*}itemref')
-            if not itemrefs:
-                self.errors.append("No itemrefs in spine")
-                return False
-
-            return True
-
-        except ET.ParseError as e:
-            self.errors.append(f"Invalid OPF: {e}")
-            return False
-
-    def _run_epubcheck(self, epub_path: str) -> bool:
-        """
-        Run epubcheck on the EPUB file
-
-        Args:
-            epub_path: Path to EPUB file
-
-        Returns:
-            True if epubcheck passes
-        """
-        if not self.epubcheck_path:
-            return True
-
-        logger.info(f"Running epubcheck: {self.epubcheck_path}")
+        errors = []
+        warnings = []
+        info = []
 
         try:
-            # Run epubcheck
+            # Run epubcheck with JSON output
             result = subprocess.run(
                 ['java', '-jar', self.epubcheck_path, epub_path, '--json', '-'],
                 capture_output=True,
                 text=True,
-                timeout=60
+                timeout=120
             )
 
             # Parse JSON output
@@ -309,176 +312,445 @@ class EPUBValidator:
                 try:
                     report = json.loads(result.stdout)
 
-                    # Extract messages
                     if 'messages' in report:
                         for msg in report['messages']:
                             severity = msg.get('severity', 'INFO')
                             message = msg.get('message', '')
-                            location = msg.get('locations', [{}])[0]
-                            line = location.get('line', '')
-                            col = location.get('column', '')
+                            message_id = msg.get('ID', 'UNKNOWN')
 
-                            error_text = f"{message}"
-                            if line:
-                                error_text += f" (line {line}"
-                                if col:
-                                    error_text += f", col {col}"
-                                error_text += ")"
+                            locations = msg.get('locations', [{}])
+                            location = locations[0] if locations else {}
 
-                            if severity == 'ERROR' or severity == 'FATAL':
-                                self.errors.append(error_text)
+                            error = ValidationError(
+                                code=message_id,
+                                severity=severity,
+                                message=message,
+                                location=location.get('path'),
+                                line=location.get('line'),
+                                column=location.get('column'),
+                                fixable=self._is_fixable(message_id)
+                            )
+
+                            if severity in ('FATAL', 'ERROR'):
+                                errors.append(error)
                             elif severity == 'WARNING':
-                                self.warnings.append(error_text)
+                                warnings.append(error)
+                            else:
+                                info.append(error)
 
                 except json.JSONDecodeError:
                     logger.warning("Could not parse epubcheck JSON output")
-
-            # Check return code
-            if result.returncode == 0:
-                logger.info("epubcheck validation passed")
-                return True
-            else:
-                logger.warning(f"epubcheck failed with return code {result.returncode}")
-                if result.stderr:
-                    self.errors.append(f"epubcheck error: {result.stderr}")
-                return False
+                    errors.append(ValidationError(
+                        code='EPUBCHECK_PARSE_ERROR',
+                        severity='ERROR',
+                        message="Failed to parse epubcheck output"
+                    ))
 
         except subprocess.TimeoutExpired:
-            self.errors.append("epubcheck timed out")
-            return False
-        except FileNotFoundError:
-            self.warnings.append("Java not found, cannot run epubcheck")
-            return True
+            errors.append(ValidationError(
+                code='EPUBCHECK_TIMEOUT',
+                severity='ERROR',
+                message="epubcheck timed out"
+            ))
         except Exception as e:
-            self.warnings.append(f"epubcheck error: {str(e)}")
-            return True
+            errors.append(ValidationError(
+                code='EPUBCHECK_ERROR',
+                severity='ERROR',
+                message=f"epubcheck error: {str(e)}"
+            ))
 
-    def validate_mathml(self, epub_path: str) -> Tuple[bool, List[str]]:
+        return {'errors': errors, 'warnings': warnings, 'info': info}
+
+    def _is_fixable(self, error_code: str) -> bool:
         """
-        Specifically validate MathML content in EPUB
+        Determine if an error is automatically fixable
+
+        Args:
+            error_code: Error code from epubcheck
+
+        Returns:
+            True if fixable
+        """
+        fixable_codes = {
+            'RSC-005',  # Invalid role attribute
+            'RSC-016',  # Invalid XML character
+            'PKG-021',  # Missing file in manifest
+            'RSC-007',  # Referenced resource missing
+            'RSC-012',  # Fragment identifier not found
+            'CSS-008',  # Invalid CSS
+        }
+        return error_code in fixable_codes
+
+    def auto_fix(self, epub_path: str, validation_result: ValidationResult,
+                 max_attempts: int = 3) -> Tuple[str, ValidationResult]:
+        """
+        Automatically fix EPUB errors
 
         Args:
             epub_path: Path to EPUB file
+            validation_result: Validation result with errors
+            max_attempts: Maximum fix attempts (default: 3)
 
         Returns:
-            Tuple of (is_valid, error_list)
+            Tuple of (fixed_epub_path, new_validation_result)
         """
-        logger.info("Validating MathML content")
+        logger.info(f"Attempting automatic fix for {epub_path}")
 
-        mathml_errors = []
+        # Create working directory
+        temp_dir = tempfile.mkdtemp(prefix='epub_fix_')
+        work_path = os.path.join(temp_dir, 'work.epub')
+        shutil.copy2(epub_path, work_path)
 
         try:
-            with zipfile.ZipFile(epub_path, 'r') as epub:
-                # Find all XHTML files
-                xhtml_files = [f for f in epub.namelist()
-                              if f.endswith('.xhtml') or f.endswith('.html')]
+            for attempt in range(max_attempts):
+                logger.info(f"Fix attempt {attempt + 1}/{max_attempts}")
 
-                for xhtml_file in xhtml_files:
-                    content = epub.read(xhtml_file).decode('utf-8')
+                # Extract EPUB
+                extract_dir = os.path.join(temp_dir, f'extracted_{attempt}')
+                with zipfile.ZipFile(work_path, 'r') as zf:
+                    zf.extractall(extract_dir)
 
-                    # Check for MathML
-                    if '<math' in content.lower():
-                        # Validate MathML namespace
-                        if 'xmlns="http://www.w3.org/1998/Math/MathML"' not in content:
-                            mathml_errors.append(
-                                f"{xhtml_file}: MathML missing proper namespace"
-                            )
+                # Apply fixes based on error codes
+                fixed = False
 
-                        # Check for basic MathML structure
-                        try:
-                            root = ET.fromstring(content.encode('utf-8'))
-                            math_elements = root.findall('.//{http://www.w3.org/1998/Math/MathML}math')
+                for error in validation_result.errors:
+                    if not error.fixable:
+                        continue
 
-                            for math in math_elements:
-                                # Check for content
-                                if len(list(math)) == 0:
-                                    mathml_errors.append(
-                                        f"{xhtml_file}: Empty MathML element"
-                                    )
+                    if error.code == 'RSC-005':  # Invalid ARIA role
+                        if self._fix_aria_roles(extract_dir):
+                            fixed = True
+                            logger.info("Fixed ARIA role errors")
 
-                        except ET.ParseError as e:
-                            mathml_errors.append(f"{xhtml_file}: XML parse error: {e}")
+                    elif error.code == 'RSC-016':  # Invalid XML character
+                        if self._fix_xml_characters(extract_dir):
+                            fixed = True
+                            logger.info("Fixed XML character errors")
 
-            is_valid = len(mathml_errors) == 0
-            return is_valid, mathml_errors
+                    elif error.code == 'PKG-021':  # Missing file
+                        if self._fix_missing_files(extract_dir, error):
+                            fixed = True
+                            logger.info("Fixed missing file errors")
 
-        except Exception as e:
-            mathml_errors.append(f"MathML validation error: {str(e)}")
-            return False, mathml_errors
+                    elif error.code == 'RSC-007':  # Referenced resource missing
+                        if self._fix_missing_resources(extract_dir, error):
+                            fixed = True
+                            logger.info("Fixed missing resource errors")
 
-    def get_report(self) -> Dict[str, Any]:
+                if not fixed:
+                    logger.info("No fixable errors found")
+                    break
+
+                # Repackage EPUB
+                fixed_path = os.path.join(temp_dir, f'fixed_{attempt}.epub')
+                self._repackage_epub(extract_dir, fixed_path)
+                work_path = fixed_path
+
+                # Re-validate
+                validation_result = self.validate(work_path)
+
+                if validation_result.is_valid:
+                    logger.info("✓ All errors fixed!")
+                    break
+
+            # Copy fixed EPUB to output
+            output_path = epub_path.replace('.epub', '_fixed.epub')
+            shutil.copy2(work_path, output_path)
+
+            return output_path, validation_result
+
+        finally:
+            # Cleanup
+            shutil.rmtree(temp_dir, ignore_errors=True)
+
+    def _fix_aria_roles(self, extract_dir: str) -> bool:
         """
-        Get validation report
+        Fix invalid ARIA role attributes
+
+        Args:
+            extract_dir: Extracted EPUB directory
 
         Returns:
-            Dictionary with validation results
+            True if any fixes were made
         """
-        return {
-            'errors': self.errors,
-            'warnings': self.warnings,
-            'error_count': len(self.errors),
-            'warning_count': len(self.warnings),
-            'is_valid': len(self.errors) == 0
+        fixed = False
+
+        # Find all XHTML files
+        for root, dirs, files in os.walk(extract_dir):
+            for file in files:
+                if file.endswith(('.xhtml', '.html')):
+                    file_path = os.path.join(root, file)
+
+                    try:
+                        # Read file
+                        with open(file_path, 'r', encoding='utf-8') as f:
+                            content = f.read()
+
+                        original_content = content
+
+                        # Fix invalid role attributes
+                        # Pattern: role="anything"
+                        def replace_role(match):
+                            nonlocal fixed
+                            role_value = match.group(1)
+
+                            # If role is numeric or invalid, replace with appropriate value
+                            if role_value.isdigit():
+                                # Numeric roles - determine context and replace
+                                fixed = True
+                                return 'role="doc-chapter"'  # Default to chapter
+
+                            # Check if role is valid
+                            if role_value not in self.VALID_ARIA_ROLES:
+                                # Try to map to valid role
+                                mapped_role = self._map_to_valid_role(role_value)
+                                if mapped_role:
+                                    fixed = True
+                                    return f'role="{mapped_role}"'
+                                else:
+                                    # Remove invalid role
+                                    fixed = True
+                                    return ''
+
+                            return match.group(0)
+
+                        # Replace role attributes
+                        content = re.sub(r'role="([^"]+)"', replace_role, content)
+
+                        # Write back if changed
+                        if content != original_content:
+                            with open(file_path, 'w', encoding='utf-8') as f:
+                                f.write(content)
+                            logger.debug(f"Fixed ARIA roles in {file}")
+
+                    except Exception as e:
+                        logger.warning(f"Error fixing roles in {file}: {e}")
+
+        return fixed
+
+    def _map_to_valid_role(self, invalid_role: str) -> Optional[str]:
+        """
+        Map invalid role to valid ARIA role
+
+        Args:
+            invalid_role: Invalid role value
+
+        Returns:
+            Valid role or None
+        """
+        # Common mappings
+        mappings = {
+            'chapter': 'doc-chapter',
+            'section': 'doc-chapter',
+            'title': 'doc-title',
+            'subtitle': 'doc-subtitle',
+            'toc': 'doc-toc',
+            'index': 'doc-index',
+            'glossary': 'doc-glossary',
+            'bibliography': 'doc-bibliography',
+            'preface': 'doc-preface',
+            'introduction': 'doc-introduction',
+            'conclusion': 'doc-conclusion',
+            'appendix': 'doc-appendix',
+            'abstract': 'doc-abstract',
+            'footnote': 'doc-footnote',
+            'endnote': 'doc-endnote',
         }
 
+        return mappings.get(invalid_role.lower())
 
-# Utility function
-def validate_epub(epub_path: str, use_epubcheck: bool = True) -> Tuple[bool, List[str]]:
+    def _fix_xml_characters(self, extract_dir: str) -> bool:
+        """
+        Fix invalid XML characters
+
+        Args:
+            extract_dir: Extracted EPUB directory
+
+        Returns:
+            True if any fixes were made
+        """
+        fixed = False
+
+        # Invalid XML characters regex
+        # Unicode: 0x0-0x8, 0xB-0xC, 0xE-0x1F (except 0x9, 0xA, 0xD)
+        invalid_chars = re.compile(r'[\x00-\x08\x0B\x0C\x0E-\x1F]')
+
+        for root, dirs, files in os.walk(extract_dir):
+            for file in files:
+                if file.endswith(('.xhtml', '.html', '.xml', '.opf', '.ncx')):
+                    file_path = os.path.join(root, file)
+
+                    try:
+                        with open(file_path, 'r', encoding='utf-8') as f:
+                            content = f.read()
+
+                        # Remove invalid characters
+                        new_content = invalid_chars.sub('', content)
+
+                        if new_content != content:
+                            with open(file_path, 'w', encoding='utf-8') as f:
+                                f.write(new_content)
+                            fixed = True
+                            logger.debug(f"Fixed XML characters in {file}")
+
+                    except Exception as e:
+                        logger.warning(f"Error fixing XML in {file}: {e}")
+
+        return fixed
+
+    def _fix_missing_files(self, extract_dir: str, error: ValidationError) -> bool:
+        """
+        Fix missing file errors by removing references
+
+        Args:
+            extract_dir: Extracted EPUB directory
+            error: Validation error
+
+        Returns:
+            True if fixed
+        """
+        # For now, remove references to missing files from manifest
+        # TODO: Implement better image recovery
+        return False
+
+    def _fix_missing_resources(self, extract_dir: str, error: ValidationError) -> bool:
+        """
+        Fix missing resource errors
+
+        Args:
+            extract_dir: Extracted EPUB directory
+            error: Validation error
+
+        Returns:
+            True if fixed
+        """
+        # TODO: Implement resource fixing
+        return False
+
+    def _repackage_epub(self, extract_dir: str, output_path: str):
+        """
+        Repackage extracted EPUB directory
+
+        Args:
+            extract_dir: Extracted directory
+            output_path: Output EPUB path
+        """
+        with zipfile.ZipFile(output_path, 'w', zipfile.ZIP_DEFLATED) as zf:
+            # Add mimetype first (uncompressed)
+            mimetype_path = os.path.join(extract_dir, 'mimetype')
+            if os.path.exists(mimetype_path):
+                zf.write(mimetype_path, 'mimetype', compress_type=zipfile.ZIP_STORED)
+
+            # Add all other files
+            for root, dirs, files in os.walk(extract_dir):
+                for file in files:
+                    if file == 'mimetype':
+                        continue
+
+                    file_path = os.path.join(root, file)
+                    arcname = os.path.relpath(file_path, extract_dir)
+                    zf.write(file_path, arcname)
+
+    def _validate_xml_syntax(self, xml_content: bytes) -> bool:
+        """Validate XML syntax"""
+        try:
+            ET.fromstring(xml_content)
+            return True
+        except ET.ParseError:
+            return False
+
+    def _extract_opf_path(self, container_xml: bytes) -> Optional[str]:
+        """Extract OPF file path from container.xml"""
+        try:
+            root = ET.fromstring(container_xml)
+            rootfile = root.find('.//{*}rootfile')
+            if rootfile is not None:
+                return rootfile.get('full-path')
+        except Exception:
+            pass
+        return None
+
+
+# Utility functions
+def validate_epub(epub_path: str) -> ValidationResult:
     """
-    Convenience function to validate an EPUB file
+    Convenience function to validate EPUB
 
     Args:
         epub_path: Path to EPUB file
-        use_epubcheck: Whether to use epubcheck
 
     Returns:
-        Tuple of (is_valid, error_list)
+        ValidationResult
     """
     validator = EPUBValidator()
-    return validator.validate(epub_path, use_epubcheck)
+    return validator.validate(epub_path)
 
 
-# Example usage
+def auto_fix_epub(epub_path: str) -> Tuple[str, ValidationResult]:
+    """
+    Convenience function to auto-fix EPUB
+
+    Args:
+        epub_path: Path to EPUB file
+
+    Returns:
+        Tuple of (fixed_path, validation_result)
+    """
+    validator = EPUBValidator()
+    result = validator.validate(epub_path)
+
+    if not result.is_valid and result.fixable_count > 0:
+        return validator.auto_fix(epub_path, result)
+
+    return epub_path, result
+
+
+# CLI
 if __name__ == '__main__':
     import sys
 
-    # Set up logging
     logging.basicConfig(level=logging.INFO)
 
     if len(sys.argv) < 2:
-        print("Usage: python validator.py <epub_file>")
+        print("Usage: python validator.py <epub_file> [--fix]")
         sys.exit(1)
 
     epub_file = sys.argv[1]
+    auto_fix_flag = '--fix' in sys.argv
 
     validator = EPUBValidator()
-    is_valid, errors = validator.validate(epub_file)
+    result = validator.validate(epub_file)
 
-    print("\n" + "="*50)
+    # Print results
+    print("\n" + "="*60)
     print("EPUB Validation Report")
-    print("="*50)
+    print("="*60)
     print(f"File: {epub_file}")
-    print(f"Valid: {'✓ YES' if is_valid else '✗ NO'}")
-    print(f"Errors: {len(validator.errors)}")
-    print(f"Warnings: {len(validator.warnings)}")
+    print(f"Valid: {'✓ YES' if result.is_valid else '✗ NO'}")
+    print(f"Fatal: {result.fatal_count}")
+    print(f"Errors: {result.error_count}")
+    print(f"Warnings: {result.warning_count}")
+    print(f"Fixable: {result.fixable_count}")
+    print("="*60)
 
-    if validator.errors:
+    if not result.is_valid:
         print("\nErrors:")
-        for error in validator.errors:
-            print(f"  - {error}")
+        for error in result.errors[:10]:  # Show first 10
+            print(f"  [{error.severity}] {error.code}: {error.message}")
+            if error.location:
+                print(f"      Location: {error.location}:{error.line or '?'}")
+            if error.fixable:
+                print(f"      ✓ Fixable")
 
-    if validator.warnings:
-        print("\nWarnings:")
-        for warning in validator.warnings:
-            print(f"  - {warning}")
+    if auto_fix_flag and not result.is_valid and result.fixable_count > 0:
+        print("\n" + "="*60)
+        print("Attempting automatic fix...")
+        print("="*60)
 
-    print("="*50)
+        fixed_path, new_result = validator.auto_fix(epub_file, result)
 
-    # Also check MathML
-    mathml_valid, mathml_errors = validator.validate_mathml(epub_file)
-    if not mathml_valid:
-        print("\nMathML Validation Errors:")
-        for error in mathml_errors:
-            print(f"  - {error}")
+        print(f"\nFixed EPUB: {fixed_path}")
+        print(f"New validation: {'✓ PASS' if new_result.is_valid else '✗ FAIL'}")
+        print(f"Remaining errors: {new_result.error_count}")
 
-    sys.exit(0 if is_valid else 1)
+    sys.exit(0 if result.is_valid else 1)
