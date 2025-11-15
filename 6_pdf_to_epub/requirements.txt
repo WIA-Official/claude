@@ -1,0 +1,30 @@
+# PDF to EPUB Converter - Python Dependencies
+
+# Core PDF processing
+PyPDF2==3.0.1
+
+# Image processing
+Pillow==10.1.0
+
+# Mathematical formula parsing
+sympy==1.12
+
+# EPUB validation (Python wrapper)
+# Note: epubcheck requires Java and the epubcheck JAR file
+
+# Web framework
+Flask==3.0.0
+Werkzeug==3.0.1
+
+# Additional utilities
+python-dateutil==2.8.2
+
+# Optional: For better LaTeX parsing
+# antlr4-python3-runtime==4.13.1
+
+# Development dependencies (optional)
+# pytest==7.4.3
+# pytest-cov==4.1.0
+# black==23.12.0
+# flake8==6.1.0
+# mypy==1.7.1
