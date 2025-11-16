@@ -50,7 +50,10 @@ class PDFToEPUBConverter:
         # Initialize components
         self.formula_parser = FormulaParser()
         self.epub_builder = EPUBBuilder()
-        self.validator = EPUBValidator()
+
+        # Initialize validator with Claude API support
+        claude_api_key = os.environ.get('ANTHROPIC_API_KEY')
+        self.validator = EPUBValidator(claude_api_key=claude_api_key)
 
         # Metadata storage
         self.metadata: Dict[str, Any] = {}

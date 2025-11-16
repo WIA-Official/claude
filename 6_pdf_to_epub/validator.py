@@ -99,14 +99,32 @@ class EPUBValidator:
         'complementary', 'contentinfo', 'banner', 'search', 'region'
     }
 
-    def __init__(self, epubcheck_path: Optional[str] = None):
+    def __init__(self, epubcheck_path: Optional[str] = None, claude_api_key: Optional[str] = None):
         """
-        Initialize the enhanced validator
+        Initialize the enhanced validator with optional Claude API support
 
         Args:
             epubcheck_path: Path to epubcheck JAR file (optional)
+            claude_api_key: Claude API key for AI-powered auto-fix (optional)
         """
         self.epubcheck_path = epubcheck_path or self._find_epubcheck()
+
+        # Initialize Claude API fixer (optional)
+        self.claude_fixer = None
+        self.claude_enabled = False
+
+        if claude_api_key:
+            try:
+                from claude_helper import ClaudeEPUBFixer
+                self.claude_fixer = ClaudeEPUBFixer(claude_api_key)
+                self.claude_enabled = True
+                logger.info("✓ Claude API auto-fix enabled (AI-powered)")
+            except ImportError as e:
+                logger.warning(f"Claude helper not available: {e}")
+            except Exception as e:
+                logger.warning(f"Could not initialize Claude fixer: {e}")
+        else:
+            logger.debug("Claude API not configured (using basic auto-fix)")
 
     def _find_epubcheck(self) -> Optional[str]:
         """
@@ -382,19 +400,22 @@ class EPUBValidator:
         return error_code in fixable_codes
 
     def auto_fix(self, epub_path: str, validation_result: ValidationResult,
-                 max_attempts: int = 3) -> Tuple[str, ValidationResult]:
+                 max_attempts: int = 3, use_claude: bool = True) -> Tuple[str, ValidationResult]:
         """
-        Automatically fix EPUB errors
+        Automatically fix EPUB errors with optional Claude API AI-powered fixes
 
         Args:
             epub_path: Path to EPUB file
             validation_result: Validation result with errors
             max_attempts: Maximum fix attempts (default: 3)
+            use_claude: Use Claude API for complex fixes (default: True)
 
         Returns:
             Tuple of (fixed_epub_path, new_validation_result)
         """
         logger.info(f"Attempting automatic fix for {epub_path}")
+        if use_claude and self.claude_enabled:
+            logger.info("🤖 AI-powered auto-fix enabled (Claude API)")
 
         # Create working directory
         temp_dir = tempfile.mkdtemp(prefix='epub_fix_')
@@ -413,6 +434,14 @@ class EPUBValidator:
                 # Apply fixes based on error codes
                 fixed = False
 
+                # 🆕 Claude API: Try AI-powered comprehensive fix first
+                if use_claude and self.claude_enabled and attempt == 0:
+                    logger.info("🤖 Attempting Claude API comprehensive fix...")
+                    if self._fix_with_claude_api(extract_dir, validation_result):
+                        fixed = True
+                        logger.info("✓ Claude API fixes applied")
+
+                # Standard rule-based fixes (fallback or supplement)
                 for error in validation_result.errors:
                     if not error.fixable:
                         continue
@@ -834,6 +863,112 @@ class EPUBValidator:
                         logger.warning(f"Error updating manifest: {e}")
 
         return fixed
+
+    def _fix_with_claude_api(self, extract_dir: str, validation_result: ValidationResult) -> bool:
+        """
+        Use Claude API for comprehensive AI-powered fixes
+
+        Args:
+            extract_dir: Extracted EPUB directory
+            validation_result: Validation result with errors
+
+        Returns:
+            True if any fixes were applied
+        """
+        if not self.claude_fixer:
+            return False
+
+        fixed = False
+
+        try:
+            # Group errors by file
+            errors_by_file = {}
+            for error in validation_result.errors:
+                if not error.location:
+                    continue
+
+                file_location = error.location
+                if file_location not in errors_by_file:
+                    errors_by_file[file_location] = []
+
+                errors_by_file[file_location].append({
+                    'code': error.code,
+                    'message': error.message,
+                    'line': error.line,
+                    'column': error.column,
+                    'severity': error.severity
+                })
+
+            # Fix each file with Claude API
+            for file_location, file_errors in errors_by_file.items():
+                # Find the actual file path
+                file_path = self._find_file_in_epub(extract_dir, file_location)
+                if not file_path:
+                    logger.warning(f"Could not find file: {file_location}")
+                    continue
+
+                logger.info(f"🤖 Claude API fixing {file_location} ({len(file_errors)} errors)")
+
+                try:
+                    # Read file content
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        original_content = f.read()
+
+                    # Use Claude API for comprehensive fix
+                    fixed_content, usage = self.claude_fixer.fix_file_comprehensive(
+                        file_location,
+                        original_content,
+                        file_errors
+                    )
+
+                    # Write back if changed
+                    if fixed_content and fixed_content != original_content:
+                        with open(file_path, 'w', encoding='utf-8') as f:
+                            f.write(fixed_content)
+
+                        fixed = True
+                        logger.info(f"✓ Fixed {file_location} (tokens: {usage.get('total_tokens', 0)}, "
+                                  f"cost: ${usage.get('cost_usd', 0)})")
+
+                except Exception as e:
+                    logger.error(f"Error fixing {file_location} with Claude API: {e}")
+                    continue
+
+            # Show total usage
+            if fixed and self.claude_fixer:
+                stats = self.claude_fixer.get_usage_stats()
+                logger.info(f"💰 Total Claude API usage: {stats['total_tokens']} tokens, "
+                          f"${stats['total_cost_usd']} USD")
+
+        except Exception as e:
+            logger.error(f"Error in Claude API comprehensive fix: {e}")
+            return False
+
+        return fixed
+
+    def _find_file_in_epub(self, extract_dir: str, file_location: str) -> Optional[str]:
+        """
+        Find file in extracted EPUB directory
+
+        Args:
+            extract_dir: Extracted EPUB directory
+            file_location: File location from error (e.g., "OEBPS/text/chapter001.xhtml")
+
+        Returns:
+            Full path to file or None
+        """
+        # Try direct path
+        direct_path = os.path.join(extract_dir, file_location)
+        if os.path.exists(direct_path):
+            return direct_path
+
+        # Try searching for filename
+        filename = os.path.basename(file_location)
+        for root, dirs, files in os.walk(extract_dir):
+            if filename in files:
+                return os.path.join(root, filename)
+
+        return None
 
     def _repackage_epub(self, extract_dir: str, output_path: str):
         """

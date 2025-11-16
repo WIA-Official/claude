@@ -34,6 +34,14 @@ app.config['UPLOAD_FOLDER'] = '/tmp/pdf_to_epub/uploads'
 app.config['OUTPUT_FOLDER'] = '/tmp/pdf_to_epub/outputs'
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', str(uuid.uuid4()))
 
+# Claude API configuration for AI-powered auto-fix
+# Set ANTHROPIC_API_KEY environment variable to enable AI-powered auto-fix
+CLAUDE_API_KEY = os.environ.get('ANTHROPIC_API_KEY')
+if CLAUDE_API_KEY:
+    logger.info("✓ Claude API configured for AI-powered auto-fix")
+else:
+    logger.info("ℹ Claude API not configured (set ANTHROPIC_API_KEY to enable)")
+
 # Create folders
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(app.config['OUTPUT_FOLDER'], exist_ok=True)
